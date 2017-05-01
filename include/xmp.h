@@ -344,15 +344,6 @@ EXPORT int         xmp_set_instrument_path (xmp_context, char *);
 EXPORT int         xmp_load_module_from_memory (xmp_context, void *, long);
 EXPORT int         xmp_load_module_from_file (xmp_context, void *, long);
 
-/* External sample mixer API */
-EXPORT int         xmp_start_smix       (xmp_context, int, int);
-EXPORT void        xmp_end_smix         (xmp_context);
-EXPORT int         xmp_smix_play_instrument(xmp_context, int, int, int, int);
-EXPORT int         xmp_smix_play_sample (xmp_context, int, int, int, int);
-EXPORT int         xmp_smix_channel_pan (xmp_context, int, int);
-EXPORT int         xmp_smix_load_sample (xmp_context, int, char *);
-EXPORT int         xmp_smix_release_sample (xmp_context, int);
-
 #ifdef __cplusplus
 }
 #endif

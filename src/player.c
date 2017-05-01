@@ -358,7 +358,6 @@ static void reset_channels(struct context_data *ctx)
 	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
-	struct smix_data *smix = &ctx->smix;
 	struct channel_data *xc;
 	int i;
 
@@ -390,7 +389,7 @@ static void reset_channels(struct context_data *ctx)
 	for (i = 0; i < p->virt.num_tracks; i++) {
 		xc = &p->xc_data[i];
 
-		if (i >= mod->chn && i < mod->chn + smix->chn) {
+		if (i >= mod->chn && i < mod->chn) {
 			xc->mastervol = 0x40;
 			xc->pan.val = 0x80;
 		} else {
@@ -610,13 +609,14 @@ static void process_volume(struct context_data *ctx, int chn, int act)
 {
 	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
+	struct xmp_module *mod = &m->mod;
 	struct channel_data *xc = &p->xc_data[chn];
 	struct xmp_instrument *instrument;
 	int finalvol;
 	uint16 vol_envelope;
 	int fade = 0;
 
-	instrument = libxmp_get_instrument(ctx, xc->ins);
+	instrument = &mod->xxi[xc->ins];
 
 	/* Keyoff and fadeout */
 
@@ -743,11 +743,7 @@ static void process_volume(struct context_data *ctx, int chn, int act)
 		finalvol = tremor_s3m(ctx, chn, finalvol);
 	}
 
-	if (chn < m->mod.chn) {
-		finalvol = finalvol * p->master_vol / 100;
-	} else {
-		finalvol = finalvol * p->smix_vol / 100;
-	}
+	finalvol = finalvol * p->master_vol / 100;
 
 	xc->info_finalvol = TEST_NOTE(NOTE_SAMPLE_END) ? 0 : finalvol;
 
@@ -767,6 +763,7 @@ static void process_frequency(struct context_data *ctx, int chn, int act)
 	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
 	struct channel_data *xc = &p->xc_data[chn];
+	struct xmp_module *mod = &m->mod;
 	struct xmp_instrument *instrument;
 	double period, vibrato;
 	int linear_bend;
@@ -776,7 +773,7 @@ static void process_frequency(struct context_data *ctx, int chn, int act)
 	int cutoff, resonance;
 #endif
 
-	instrument = libxmp_get_instrument(ctx, xc->ins);
+	instrument = &mod->xxi[xc->ins];
 
 	if (!TEST_PER(FENV_PAUSE)) {
 		xc->f_idx = update_envelope(&instrument->fei, xc->f_idx,
@@ -977,12 +974,13 @@ static void process_pan(struct context_data *ctx, int chn, int act)
 	struct module_data *m = &ctx->m;
 	struct mixer_data *s = &ctx->s;
 	struct channel_data *xc = &p->xc_data[chn];
+	struct xmp_module *mod = &m->mod;
 	struct xmp_instrument *instrument;
 	int finalpan, panbrello = 0;
 	int pan_envelope;
 	int channel_pan;
 
-	instrument = libxmp_get_instrument(ctx, xc->ins);
+	instrument = &mod->xxi[xc->ins];
 
 	if (!TEST_PER(PENV_PAUSE)) {
 		xc->p_idx = update_envelope(&instrument->pei, xc->p_idx,
@@ -1221,7 +1219,6 @@ static void update_pan(struct context_data *ctx, int chn)
 static void play_channel(struct context_data *ctx, int chn)
 {
 	struct player_data *p = &ctx->p;
-	struct smix_data *smix = &ctx->smix;
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
 	struct channel_data *xc = &p->xc_data[chn];
@@ -1323,10 +1320,9 @@ static void inject_event(struct context_data *ctx)
 	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
-	struct smix_data *smix = &ctx->smix;
 	int chn;
 	
-	for (chn = 0; chn < mod->chn + smix->chn; chn++) {
+	for (chn = 0; chn < mod->chn; chn++) {
 		struct xmp_event *e = &p->inject_event[chn];
 		if (e->_flag > 0) {
 			libxmp_read_event(ctx, e, chn);
@@ -1473,7 +1469,6 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct player_data *p = &ctx->p;
-	struct smix_data *smix = &ctx->smix;
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
 	struct flow_control *f = &p->flow;
@@ -1493,7 +1488,6 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 		return -XMP_ERROR_INTERNAL;
 
 	p->master_vol = 100;
-	p->smix_vol = 100;
 	p->gvol = m->volbase;
 	p->pos = p->ord = 0;
 	p->frame = -1;
@@ -1530,7 +1524,7 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 
 	update_from_ord_info(ctx);
 
-	if (libxmp_virt_on(ctx, mod->chn + smix->chn) != 0) {
+	if (libxmp_virt_on(ctx, mod->chn) != 0) {
 		ret = -XMP_ERROR_INTERNAL;
 		goto err;
 	}

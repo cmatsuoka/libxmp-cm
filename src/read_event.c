@@ -85,12 +85,13 @@ static void reset_envelopes_carry(struct context_data *ctx,
 	struct xmp_module *mod = &m->mod;
 	struct xmp_instrument *xxi;
 
-	if (!IS_VALID_INSTRUMENT(xc->ins))
+	if (!IS_VALID_INSTRUMENT(xc->ins)) {
 		return;
+	}
 
  	RESET_NOTE(NOTE_ENV_END);
 
-	xxi = libxmp_get_instrument(ctx, xc->ins);
+	xxi = &mod->xxi[xc->ins];
 
 	/* Reset envelope positions */
 	if (~xxi->aei.flg & XMP_ENVELOPE_CARRY) {
@@ -112,16 +113,11 @@ static void set_effect_defaults(struct context_data *ctx, int note,
 {
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
-	struct smix_data *smix = &ctx->smix;
 	
 	if (sub != NULL && note >= 0) {
 		struct xmp_instrument *xxi;
 
-		if (xc->ins >= mod->ins) {
-			xxi = &smix->xxi[xc->ins - mod->ins];
-		} else {
-			xxi = &mod->xxi[xc->ins];
-		}
+		xxi = &mod->xxi[xc->ins];
 
 		if (!HAS_QUIRK(QUIRK_PROTRACK)) {
 			xc->finetune = sub->fin;
@@ -890,7 +886,9 @@ static inline int has_note_event(struct xmp_event *e)
 
 static int check_fadeout(struct context_data *ctx, struct channel_data *xc, int ins)
 {
-	struct xmp_instrument *xxi = libxmp_get_instrument(ctx, ins);
+	struct module_data *m = &ctx->m;
+	struct xmp_module *mod = &m->mod;
+	struct xmp_instrument *xxi = &mod->xxi[ins];
 
 	if (xxi == NULL) {
 		return 1;
@@ -921,8 +919,10 @@ static void fix_period(struct context_data *ctx, int chn, struct xmp_subinstrume
 {
 	if (sub->nna == XMP_INST_NNA_CONT) {
 		struct player_data *p = &ctx->p;
+		struct module_data *m = &ctx->m;
 		struct channel_data *xc = &p->xc_data[chn];
-		struct xmp_instrument *xxi = libxmp_get_instrument(ctx, xc->ins);
+		struct xmp_module *mod = &m->mod;
+		struct xmp_instrument *xxi = &mod->xxi[xc->ins];
 
 		xc->period = libxmp_note_to_period(ctx, xc->key + sub->xpo +
 			xxi->map[xc->key_porta].xpo, xc->finetune, xc->per_adj);
@@ -1490,93 +1490,6 @@ static int read_event_med(struct context_data *ctx, struct xmp_event *e, int chn
 
 #endif
 
-static int read_event_smix(struct context_data *ctx, struct xmp_event *e, int chn)
-{
-	struct player_data *p = &ctx->p;
-	struct smix_data *smix = &ctx->smix;
-	struct module_data *m = &ctx->m;
-	struct xmp_module *mod = &m->mod;
-	struct channel_data *xc = &p->xc_data[chn];
-	struct xmp_subinstrument *sub;
-	int is_smix_ins;
-	int ins, note, transp, smp;
-
-	xc->flags = 0;
-
-	if (!e->ins)
-		return 0;
-
-	is_smix_ins = 0;
-	ins = e->ins - 1;
-	SET(NEW_INS);
-	xc->fadeout = 0x10000;
-	xc->per_flags = 0;
-	xc->offset.val = 0;
-	RESET_NOTE(NOTE_RELEASE);
-
-	xc->ins = ins;
-
-	if (ins >= mod->ins && ins < mod->ins + smix->ins) {
-		is_smix_ins = 1;
-		xc->ins_fade = smix->xxi[xc->ins - mod->ins].rls;
-	}
-
-	SET(NEW_NOTE);
-
-	if (e->note == XMP_KEY_OFF) {
-		SET_NOTE(NOTE_RELEASE);
-		return 0;
-	}
-
-	xc->key = e->note - 1;
-	RESET_NOTE(NOTE_END);
-
-	if (is_smix_ins) {
-		sub = &smix->xxi[xc->ins - mod->ins].sub[0];
-		if (sub == NULL) {
-			return 0;
-		}
-
-		note = xc->key + sub->xpo;
-		smp = sub->sid;
-		if (smix->xxs[smp].len == 0)
-			smp = -1;
-		if (smp >= 0 && smp < smix->smp) {
-			smp += mod->smp;
-			set_patch(ctx, chn, xc->ins, smp, note);
-			xc->smp = smp;
-		}
-	} else {
-		transp = mod->xxi[xc->ins].map[xc->key].xpo;
-		sub = get_subinstrument(ctx, xc->ins, xc->key);
-		if (sub == NULL) {
-			return 0;
-		}
-		note = xc->key + sub->xpo + transp;
-		smp = sub->sid;
-		if (mod->xxs[smp].len == 0)
-			smp = -1;
-		if (smp >= 0 && smp < mod->smp) {
-			set_patch(ctx, chn, xc->ins, smp, note);
-			xc->smp = smp;
-		}
-	}
-
-	set_effect_defaults(ctx, note, sub, xc, 0);
-	set_period(ctx, note, sub, xc, 0);
-
-	if (e->ins) {
-		reset_envelopes(ctx, xc);
-	}
-
-	xc->volume = e->vol - 1;
-
-	xc->note = note;
-	libxmp_virt_voicepos(ctx, chn, xc->offset.val);
-
-	return 0;
-}
-
 int libxmp_read_event(struct context_data *ctx, struct xmp_event *e, int chn)
 {
 	struct player_data *p = &ctx->p;
@@ -1590,9 +1503,7 @@ int libxmp_read_event(struct context_data *ctx, struct xmp_event *e, int chn)
 		SET_NOTE(NOTE_END);
 	}
 
-	if (chn >= m->mod.chn) {
-		return read_event_smix(ctx, e, chn);
-	} else switch (m->read_event_type) {
+	switch (m->read_event_type) {
 	case READ_EVENT_MOD:
 		return read_event_mod(ctx, e, chn);
 	case READ_EVENT_FT2:

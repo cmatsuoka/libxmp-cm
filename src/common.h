@@ -237,14 +237,6 @@ struct ord_data {
 
 /* Context */
 
-struct smix_data {
-	int chn;
-	int ins;
-	int smp;
-	struct xmp_instrument *xxi;
-	struct xmp_sample *xxs;
-};
-
 /* This will be added to the sample structure in the next API revision */
 struct extra_sample_data {
 	double c5spd;
@@ -311,7 +303,6 @@ struct player_data {
 	int sequence;
 	unsigned char sequence_control[XMP_MAX_MOD_LENGTH];
 
-	int smix_vol;			/* SFX volume */
 	int master_vol;			/* Music volume */
 	int gvol;
 
@@ -393,7 +384,6 @@ struct context_data {
 	struct player_data p;
 	struct mixer_data s;
 	struct module_data m;
-	struct smix_data smix;
 	int state;
 };
 
@@ -430,8 +420,5 @@ uint32	readmem24l		(const uint8 *);
 uint32	readmem24b		(const uint8 *);
 uint32	readmem32l		(const uint8 *);
 uint32	readmem32b		(const uint8 *);
-
-struct xmp_instrument *libxmp_get_instrument(struct context_data *, int);
-struct xmp_sample *libxmp_get_sample(struct context_data *, int);
 
 #endif /* LIBXMP_COMMON_H */

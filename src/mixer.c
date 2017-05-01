@@ -307,7 +307,6 @@ static void loop_reposition(struct context_data *ctx, struct mixer_voice *vi, st
 	}
 }
 
-
 /* Prepare the mixer for the next tick */
 void libxmp_mixer_prepare(struct context_data *ctx)
 {
@@ -404,14 +403,8 @@ void libxmp_mixer_softmixer(struct context_data *ctx)
 			vol_l = vi->vol * (0x80 + vi->pan);
 		}
 
-		if (vi->smp < mod->smp) {
-			xxs = &mod->xxs[vi->smp];
-			c5spd = m->xtra[vi->smp].c5spd;
-		} else {
-			xxs = &ctx->smix.xxs[vi->smp - mod->smp];
-			c5spd = m->c4rate;
-		}
-
+		xxs = &mod->xxs[vi->smp];
+		c5spd = m->xtra[vi->smp].c5spd;
 		step = C4_PERIOD * c5spd / s->freq / vi->period;
 
 		if (step < 0.001) {	/* otherwise m5v-nwlf.it crashes */
@@ -598,11 +591,7 @@ void libxmp_mixer_voicepos(struct context_data *ctx, int voc, double pos, int ac
 	struct xmp_sample *xxs;
 	int lps;
 
-	if (vi->smp < m->mod.smp) {
- 		xxs = &m->mod.xxs[vi->smp];
-	} else {
- 		xxs = &ctx->smix.xxs[vi->smp - m->mod.smp];
-	}
+ 	xxs = &m->mod.xxs[vi->smp];
 
 	if (xxs->flg & XMP_SAMPLE_SYNTH) {
 		return;
@@ -643,10 +632,12 @@ void libxmp_mixer_voicepos(struct context_data *ctx, int voc, double pos, int ac
 double libxmp_mixer_getvoicepos(struct context_data *ctx, int voc)
 {
 	struct player_data *p = &ctx->p;
+	struct module_data *m = &ctx->m;
 	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct xmp_module *mod = &m->mod;
 	struct xmp_sample *xxs;
 
-	xxs = libxmp_get_sample(ctx, vi->smp);
+	xxs = &mod->xxs[vi->smp];
 
 	if (xxs->flg & XMP_SAMPLE_SYNTH) {
 		return 0;
@@ -669,9 +660,10 @@ void libxmp_mixer_setpatch(struct context_data *ctx, int voc, int smp, int ac)
 #endif
 	struct mixer_data *s = &ctx->s;
 	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct xmp_module *mod = &m->mod;
 	struct xmp_sample *xxs;
 
-	xxs = libxmp_get_sample(ctx, smp);
+	xxs = &mod->xxs[smp];
 
 	vi->smp = smp;
 	vi->vol = 0;
