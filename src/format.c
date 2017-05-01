@@ -62,7 +62,7 @@ extern const struct format_loader libxmp_loader_dt;
 /* extern const struct format_loader libxmp_loader_dtt; */
 extern const struct format_loader libxmp_loader_mgt;
 extern const struct format_loader libxmp_loader_arch;
-extern const struct format_loader libxmp_loader_sym;
+/* extern const struct format_loader libxmp_loader_sym; */
 extern const struct format_loader libxmp_loader_digi;
 extern const struct format_loader libxmp_loader_dbm;
 extern const struct format_loader libxmp_loader_emod;
@@ -129,7 +129,7 @@ const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
 	/* &libxmp_loader_dtt, */
 	&libxmp_loader_mgt,
 	&libxmp_loader_arch,
-	&libxmp_loader_sym,
+	/* &libxmp_loader_sym, */
 	&libxmp_loader_digi,
 	&libxmp_loader_dbm,
 	&libxmp_loader_emod,

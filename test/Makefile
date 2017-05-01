@@ -1,6 +1,6 @@
 
 TEST_OBJS	= test.o md5.o
-TEST_DFILES	= Makefile $(TEST_OBJS:.o=.c) test.itz md5.h
+TEST_DFILES	= Makefile $(TEST_OBJS:.o=.c) test.it md5.h
 TEST_PATH	= test
 
 T_OBJS = $(addprefix $(TEST_PATH)/,$(TEST_OBJS))

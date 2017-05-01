@@ -1,6 +1,6 @@
-VERSION_MAJOR	= 4
-VERSION_MINOR	= 4
-VERSION_RELEASE	= 2
+VERSION_MAJOR	= 5
+VERSION_MINOR	= 0
+VERSION_RELEASE	= 0
 
 VERSION		= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_RELEASE)
 
@@ -29,7 +29,7 @@ DIST		= libxmp-$(VERSION)
 DFILES		= README INSTALL install-sh configure configure.ac config.sub \
 		  config.guess Makefile.in libxmp.pc.in libxmp.map Makefile.vc \
 		  Makefile.os2
-DDIRS		= docs include src loaders prowiz depackers win32 os2 test
+DDIRS		= docs include src loaders prowiz win32 os2 test
 V		= 0
 LIB		= libxmp.a
 SOLIB		= libxmp.so
@@ -57,7 +57,6 @@ include include/Makefile
 include src/Makefile
 include src/loaders/Makefile
 include src/loaders/prowizard/Makefile
-include src/depackers/Makefile
 include src/os2/Makefile
 include src/win32/Makefile
 include test/Makefile

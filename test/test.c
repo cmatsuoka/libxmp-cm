@@ -57,7 +57,7 @@ int main()
 	if (c == NULL)
 		goto err;
 
-	ret = xmp_load_module(c, "test.itz");
+	ret = xmp_load_module(c, "test.it");
 	if (ret != 0) {
 		printf("can't load module\n");
 		goto err;
