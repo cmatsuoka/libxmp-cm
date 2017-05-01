@@ -22,13 +22,7 @@ QUIRKS		=
 
 SMPLOADERS	= 8bit 16bit delta signal endian skip
 
-DEPACKERS	= pp sqsh s404 mmcmp zip zip_filtered zip_store arcfs \
-		  gzip compress arc_method2 arc_method8 \
-		  spark j2b lzx bzip2 xz lha_l0_lzhuff1 lha_l0_lzhuff5 \
-		  lha_l1_lzhuff5 lha_l1_lzhuff6 lha_l1_lzhuff7 lha_l2_lzhuff7 \
-		  lha_l0_filtered lha_l1_filtered lha_l2_filtered \
-		  vorbis vorbis_8bit \
-		  it_sample_8bit it_sample_16bit
+DEPACKERS	= it_sample_8bit it_sample_16bit
 
 PROWIZARD	= zen fuchs starpack
 
@@ -55,9 +49,6 @@ API		= get_format_list create_context free_context \
 		  set_position prev_position \
 		  set_player stop_module restart_module seek_time \
 		  channel_mute channel_vol inject_event scan_module
-
-API_SMIX	= smix_play_instrument smix_load_sample smix_play_sample \
-		  smix_channel_pan
 
 STORLEK		= 01_arpeggio_pitch_slide \
 		  02_arpeggio_no_value \
@@ -318,7 +309,7 @@ LOADER_TESTS	= $(addprefix loader_,$(LOADER))
 
 SYNTH_TESTS	= $(addprefix synth_,$(SYNTH))
 
-API_TESTS	= $(addprefix api_,$(API)) $(addprefix api_,$(API_SMIX))
+API_TESTS	= $(addprefix api_,$(API))
 
 PROBLEM_TESTS	= $(addprefix module_,$(PROBLEMATIC))
 
