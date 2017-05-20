@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "loaders/prowizard/prowiz.h"
+/* #include "loaders/prowizard/prowiz.h" */
 #include "format.h"
 
 extern const struct format_loader libxmp_loader_xm;
