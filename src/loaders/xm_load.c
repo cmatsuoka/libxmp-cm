@@ -53,7 +53,7 @@ static int xm_test(struct libxmp_buffer *buf, char *t, const int start)
 		return -1;
 	}
 
-	if (memcmp(buf, "Extended Module: ", 17)) {
+	if (memcmp(b, "Extended Module: ", 17)) {
 		return -1;
 	}
 
@@ -381,6 +381,8 @@ static int load_instruments(struct libxmp_buffer *buf, struct module_data *m, in
 			&xih.samples,		/* Number of samples */
 			&xih.sh_size);		/* Sample header size */
 
+printf("instrument %d: size=%d name=%22.22s type=%d samples=%d\n", i, xih.size, xih.name, xih.type, xih.samples);
+
 		/* Sanity check */
 		if (xih.samples > 0x10 || (xih.samples > 0 && xih.sh_size > 0x100)) {
 			D_(D_CRIT "Sanity check: %d %d", xih.samples, xih.sh_size);
@@ -506,7 +508,7 @@ static int load_instruments(struct libxmp_buffer *buf, struct module_data *m, in
 			}
 			xxs = &mod->xxs[sample_num];
 
-			libxmp_buffer_scan(buf, "d32l;d32l;d32;b8;b8;b8;b8;b8;b8;s22",
+			libxmp_buffer_scan(buf, "d32l;d32l;d32l;b8;b8;b8;b8;b8;b8;s22",
 				&xsh[j].length,		/* Sample length */
 				&xsh[j].loop_start,	/* Sample loop start */
 				&xsh[j].loop_length,	/* Sample loop length */
@@ -599,7 +601,7 @@ static int xm_load(struct libxmp_buffer *buf, struct module_data *m, const int s
 
 	LOAD_INIT();
 
-	libxmp_buffer_scan(buf, "s17;s20;d8;s20;w16l;d32l;w16l;w16l;w16l;w16l;w16l;w16l;w16l;w16l",
+	libxmp_buffer_scan(buf, "s17;s20;b8;s20;w16l;d32l;w16l;w16l;w16l;w16l;w16l;w16l;w16l;w16l",
 		&xfh.id,		/* ID text */
 		&xfh.name,		/* Module name */
 		NULL,			/* skip 0x1a */
@@ -614,6 +616,8 @@ static int xm_load(struct libxmp_buffer *buf, struct module_data *m, const int s
 		&xfh.flags,		/* 0=Amiga freq table, 1=Linear */
 		&xfh.tempo,		/* Default tempo */
 		&xfh.bpm);		/* Default bpm */
+
+	printf("id=%17.17s name=%20.20s len=%d pat=%d chn=%d ins=%d version=%04x bpm=%d\n", xfh.id, xfh.name, xfh.songlen, xfh.patterns, xfh.channels, xfh.instruments, xfh.version, xfh.bpm);
 
 	/* Sanity checks */
 	if (xfh.songlen > 256 || xfh.patterns > 256 || xfh.instruments > 255) {

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "buffer.h"
+#include "common.h"
 
 struct libxmp_buffer *libxmp_buffer_new(unsigned char *p, size_t size)
 {
@@ -13,6 +14,7 @@ struct libxmp_buffer *libxmp_buffer_new(unsigned char *p, size_t size)
 		goto err;
 	}
 
+	D_(D_WARN "BUF=%p", buf);
 	buf->start = buf->pos = p;
 	buf->end = buf->start + size;
 
@@ -24,37 +26,47 @@ struct libxmp_buffer *libxmp_buffer_new(unsigned char *p, size_t size)
 
 void libxmp_buffer_release(struct libxmp_buffer *buf)
 {
+	D_(D_WARN "FREE BUF=%p", buf);
 	free(buf);
 }
 
 #define ASSIGN_ENDIAN(T,fmt,f) do {					\
 	char e = *(fmt)++;						\
 	T *b = va_arg(ap, T *);						\
-	if (b != NULL) {						\
+	if (b == NULL) {						\
+		buf->pos += sizeof (T);					\
+	} else {							\
 		if (e == 'l') {						\
-			*b = (uint8)libxmp_buffer_read##f##l(buf);	\
+			*b = (T)libxmp_buffer_read##f##l(buf);		\
 		} else if (e == 'b') {					\
-			*b = (uint8)libxmp_buffer_read##f##b(buf);	\
+			*b = (T)libxmp_buffer_read##f##b(buf);		\
+		} else {						\
+			fprintf(stderr, "libxmp: buffer scan: invalid endian: %c\n", e);	\
+			longjmp(buf->jmp, LIBXMP_BUFFER_EFORMAT);	\
 		}							\
 	}								\
 } while (0)
 
-#define ASSIGN_VALUE(T,fmt,size) do {			\
-	switch (size) {					\
-	case 8:						\
-		{ T *b = va_arg(ap, T *);		\
-		*b = (T)libxmp_buffer_read8(buf);	\
-		break; }				\
-	case 16:					\
-		ASSIGN_ENDIAN(T, (fmt), 16);		\
-		break;					\
-	case 24:					\
-		ASSIGN_ENDIAN(T, (fmt), 24);		\
-		break;					\
-	case 32:					\
-		ASSIGN_ENDIAN(T, (fmt), 32);		\
-		break;					\
-	}						\
+#define ASSIGN_VALUE(T,fmt,size) do {				\
+	switch (size) {						\
+	case 8:							\
+		{ T *b = va_arg(ap, T *);			\
+		if (b == NULL) {				\
+			buf->pos++;				\
+		} else {					\
+			*b = (T)libxmp_buffer_read8(buf);	\
+		}						\
+		break; }					\
+	case 16:						\
+		ASSIGN_ENDIAN(T, (fmt), 16);			\
+		break;						\
+	case 24:						\
+		ASSIGN_ENDIAN(T, (fmt), 24);			\
+		break;						\
+	case 32:						\
+		ASSIGN_ENDIAN(T, (fmt), 32);			\
+		break;						\
+	}							\
 } while (0)
 
 int libxmp_buffer_left(struct libxmp_buffer *buf)
@@ -69,6 +81,8 @@ int libxmp_buffer_scan(struct libxmp_buffer *buf, char *fmt, ...)
 	char t;
 
 	va_start(ap, fmt);
+
+	D_(D_INFO "buffer scan: %s", fmt);
 
 	while ((t = *fmt) != 0) {
 		switch (*fmt++) {
@@ -109,19 +123,23 @@ int libxmp_buffer_scan(struct libxmp_buffer *buf, char *fmt, ...)
 	return -1;
 }
 
-int libxmp_buffer_read(struct libxmp_buffer *buf, void *dst, size_t size)
+int libxmp_buffer_read(struct libxmp_buffer *buf, void *dst, int size)
 {
+	D_(D_INFO "size=%d", size);
+
 	/* check range */
 	if (buf->pos + size >= buf->end) {
 		size = buf->end - buf->pos;
 	}
 
 	memcpy(dst, buf->pos, size);
+	buf->pos += size;
 
 	return size;
 }
 
 #define CHECK_RANGE(b,x) do {					\
+	D_(D_INFO "offset=%ld size=%ld", (x) - (b)->start, (b)->end - (b)->start); \
 	if ((x) >= (b)->end || (x) < (b)->start) {		\
 		longjmp((b)->jmp, LIBXMP_BUFFER_ERANGE);	\
 	}							\
@@ -141,6 +159,7 @@ void libxmp_buffer_seek(struct libxmp_buffer *buf, long offset, int whence)
 		CHECK_RANGE(buf, buf->end - offset - 1);
 		break;
 	default:
+		fprintf(stderr, "libxmp: buffer: invalid seek whence: %d\n", whence);
 		longjmp(buf->jmp, LIBXMP_BUFFER_EINVAL);
 	}
 }
@@ -152,6 +171,7 @@ long libxmp_buffer_tell(struct libxmp_buffer *buf)
 
 
 #define CHECK_SIZE(b,x) do {					\
+	D_(D_INFO "pos=%ld size=%ld", (b)->pos - (b)->start, (b)->end - (b)->start); \
 	if ((b)->pos + (x) >= (b)->end) {			\
 		longjmp((b)->jmp, LIBXMP_BUFFER_ERANGE);	\
 	}							\

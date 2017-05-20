@@ -1,4 +1,5 @@
 #include "test.h"
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -19,6 +20,9 @@ static void _compare_mixer_data(char *mod, char *data, int loops, int ignore_rv)
 	char line[200];
 	FILE *f;
 	int i, voc, ret;
+	int fd;
+	struct stat st;
+	char *addr;
 
 	f = fopen(data, "r");
 	fail_unless(f != NULL, "can't open data file");
@@ -26,7 +30,17 @@ static void _compare_mixer_data(char *mod, char *data, int loops, int ignore_rv)
 	opaque = xmp_create_context();
 	fail_unless(opaque != NULL, "can't create context");
 
-	ret = xmp_load_module(opaque, mod);
+	/* mmap mod file */
+	fd = open(mod, O_RDONLY);
+	fail_unless(fd > 0, "can't open mod file");
+
+	ret = fstat(fd, &st);
+	fail_unless(ret == 0, "can't stat mod file");
+
+	addr = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+	fail_unless(addr != MAP_FAILED, "can't mmap mod file");
+
+	ret = xmp_load_module(opaque, addr, st.st_size);
 	fail_unless(ret == 0, "can't load module");
 
 	ctx = (struct context_data *)opaque;

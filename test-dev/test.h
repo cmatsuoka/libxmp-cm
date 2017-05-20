@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <xmp.h>
+#include "../include/xmp.h"
 #include "md5.h"
 
 #include "../src/common.h"

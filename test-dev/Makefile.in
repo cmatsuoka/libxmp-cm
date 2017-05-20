@@ -43,8 +43,6 @@ EFFECTS		= 0_arpeggio 1_slide_up 2_slide_down \
 		  it_g00_nosuck it_l00_nosuck
 
 API		= get_format_list create_context free_context \
-		  test_module load_module load_module_from_memory \
-		  load_module_from_file \
 		  start_player play_buffer \
 		  set_position prev_position \
 		  set_player stop_module restart_module seek_time \
@@ -313,13 +311,15 @@ API_TESTS	= $(addprefix api_,$(API))
 
 PROBLEM_TESTS	= $(addprefix module_,$(PROBLEMATIC))
 
-TESTS		= $(READ_TESTS) \
+TESTS		= $(OPENMPT_XM_TESTS)
+
+OLDTESTS		= $(READ_TESTS) \
 		  $(WRITE_TESTS) \
 		  $(SMPLOAD_TESTS) \
 		  $(DEPACK_TESTS) \
-		  $(PROWIZARD_TESTS) \
 		  string_adjustment \
 		  $(LOADER_TESTS) \
+		  $(PROWIZARD_TESTS) \
 		  $(API_TESTS) \
 		  $(QUIRK_TESTS) \
 		  $(CASE1_TESTS) \
@@ -348,7 +348,7 @@ TEST_DFILES	= Makefile $(TEST_OBJS:.o=.c) test.h md5.h data
 TEST_PATH	= .
 SRC_PATH	= ../src
 
-TEST_INTERNAL	= hio.o load_helpers.o loaders/itsex.o dataio.o scan.o \
+TEST_INTERNAL	= hio.o load_helpers.o loaders/itsex.o dataio.o scan.o buffer.o \
 		  loaders/sample.o loaders/common.o period.o fnmatch.o memio.o
 
 T_OBJS 		= $(addprefix $(TEST_PATH)/,$(TEST_OBJS)) \

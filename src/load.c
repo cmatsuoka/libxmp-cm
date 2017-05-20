@@ -159,8 +159,6 @@ int xmp_test_module(void *mem, long size, struct xmp_test_info *info)
 
 */
 
-			libxmp_buffer_release(buf);
-
 			if (info != NULL && !is_prowizard) {
 				strncpy(info->name, name, XMP_NAME_SIZE - 1);
 				strncpy(info->type, format_loader[i]->name,
@@ -199,7 +197,7 @@ static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
 		if (test_result == 0) {
 			libxmp_buffer_seek(buf, 0, SEEK_SET);
 			if (setjmp(buf->jmp)) {
-				libxmp_buffer_release(buf);
+				D_(D_CRIT "exception loading module");
 				return -XMP_ERROR_LOAD;
 			}
 			D_(D_WARN "load format: %s", format_loader[i]->name);
@@ -277,7 +275,6 @@ static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
 	return 0;
 
     err_load:
-	xmp_release_module(opaque);
 	return -XMP_ERROR_LOAD;
 }
 
