@@ -3,12 +3,13 @@
 
 #include <stdio.h>
 #include "common.h"
+#include "buffer.h"
 #include "hio.h"
 
 struct format_loader {
 	const char *name;
-	int (*const test)(HIO_HANDLE *, char *, const int);
-	int (*const loader)(struct module_data *, HIO_HANDLE *, const int);
+	int (*const test)(struct libxmp_buffer *, char *, const int);
+	int (*const loader)(struct module_data *, struct libxmp_buffer *, const int);
 };
 
 char **format_list(void);

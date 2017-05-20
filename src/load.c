@@ -32,6 +32,7 @@
 #endif
 
 #include "format.h"
+#include "buffer.h"
 #include "list.h"
 #include "hio.h"
 #include "tempfile.h"
@@ -61,26 +62,26 @@ int  libxmp_prepare_scan(struct context_data *);
 
 #define BUFLEN 16384
 
-static void set_md5sum(HIO_HANDLE *f, unsigned char *digest)
+static void set_md5sum(struct libxmp_buffer *buf, unsigned char *digest)
 {
-	unsigned char buf[BUFLEN];
 	MD5_CTX ctx;
-	int bytes_read;
+	long n, size;
 
-	if (hio_size(f) <= 0) {
+	if (LIBXMP_BUFFER_SIZE(buf) <= 0) {
 		memset(digest, 0, 16);
 		return;
 	}
 
-	hio_seek(f, 0, SEEK_SET);
-
 	MD5Init(&ctx);
-	while ((bytes_read = hio_read(buf, 1, BUFLEN, f)) > 0) {
-		MD5Update(&ctx, buf, bytes_read);
+
+	size = LIBXMP_BUFFER_SIZE(buf);
+	for (n = 0; n < size; n += BUFLEN) {
+		MD5Update(&ctx, buf->start + n, size - n > BUFLEN ? BUFLEN : size - n);
 	}
 	MD5Final(digest, &ctx);
 }
 
+/*
 static char *get_dirname(char *name)
 {
 	char *div, *dirname;
@@ -112,50 +113,36 @@ static char *get_basename(char *name)
 
 	return basename;
 }
+*/
 #endif /* LIBXMP_CORE_PLAYER */
 
-int xmp_test_module(char *path, struct xmp_test_info *info)
+int xmp_test_module(void *mem, long size, struct xmp_test_info *info)
 {
-	HIO_HANDLE *h;
-	struct stat st;
-	char buf[XMP_NAME_SIZE];
+	struct libxmp_buffer *buf;
+	char name[XMP_NAME_SIZE];
 	int i;
 	int ret = -XMP_ERROR_FORMAT;
-#ifndef LIBXMP_CORE_PLAYER
-	char *temp = NULL;
-#endif
 
-	if (stat(path, &st) < 0)
-		return -XMP_ERROR_SYSTEM;
-
-#ifndef _MSC_VER
-	if (S_ISDIR(st.st_mode)) {
-		errno = EISDIR;
+	if ((buf = libxmp_buffer_new(mem, size)) == NULL) {
 		return -XMP_ERROR_SYSTEM;
 	}
-#endif
-
-	if ((h = hio_open(path, "rb")) == NULL)
-		return -XMP_ERROR_SYSTEM;
-
-#ifndef LIBXMP_CORE_PLAYER
-	/* get size after decrunch */
-	if (hio_size(h) < 256) {	/* set minimum valid module size */
-		ret = -XMP_ERROR_FORMAT;
-		goto err;
+	if (setjmp(buf->jmp) != 0) {
+		return ret;
 	}
-#endif
 
 	if (info != NULL) {
-		*info->name = 0;	/* reset name prior to testing */
-		*info->type = 0;	/* reset type prior to testing */
+		*info->name = 0;	/* reset name before testing */
+		*info->type = 0;	/* reset type before testing */
 	}
 
 	for (i = 0; format_loader[i] != NULL; i++) {
-		hio_seek(h, 0, SEEK_SET);
-		if (format_loader[i]->test(h, buf, 0) == 0) {
+
+		libxmp_buffer_seek(buf, 0, SEEK_SET);
+
+		if (format_loader[i]->test(buf, name, 0) == 0) {
 			int is_prowizard = 0;
 
+/*
 #ifndef LIBXMP_CORE_PLAYER
 			if (strcmp(format_loader[i]->name, "prowizard") == 0) {
 				hio_seek(h, 0, SEEK_SET);
@@ -170,8 +157,12 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
 			unlink_temp_file(temp);
 #endif
 
+*/
+
+			libxmp_buffer_release(buf);
+
 			if (info != NULL && !is_prowizard) {
-				strncpy(info->name, buf, XMP_NAME_SIZE - 1);
+				strncpy(info->name, name, XMP_NAME_SIZE - 1);
 				strncpy(info->type, format_loader[i]->name,
 							XMP_NAME_SIZE - 1);
 			}
@@ -179,17 +170,11 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
 		}
 	}
 
-#ifndef LIBXMP_CORE_PLAYER
-    err:
-	hio_close(h);
-	unlink_temp_file(temp);
-#else
-	hio_close(h);
-#endif
+	libxmp_buffer_release(buf);
 	return ret;
 }
 
-static int load_module(xmp_context opaque, HIO_HANDLE *h)
+static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct module_data *m = &ctx->m;
@@ -202,25 +187,30 @@ static int load_module(xmp_context opaque, HIO_HANDLE *h)
 	D_(D_WARN "load");
 	test_result = load_result = -1;
 	for (i = 0; format_loader[i] != NULL; i++) {
-		hio_seek(h, 0, SEEK_SET);
+		libxmp_buffer_seek(buf, 0, SEEK_SET);
 
-		if (hio_error(h)) {
-			/* reset error flag */
+		if (setjmp(buf->jmp)) {
+			/* Go to next format if access fault testing file */
+			continue;
 		}
 
 		D_(D_WARN "test %s", format_loader[i]->name);
-		test_result = format_loader[i]->test(h, NULL, 0);
+		test_result = format_loader[i]->test(buf, NULL, 0);
 		if (test_result == 0) {
-			hio_seek(h, 0, SEEK_SET);
+			libxmp_buffer_seek(buf, 0, SEEK_SET);
+			if (setjmp(buf->jmp)) {
+				libxmp_buffer_release(buf);
+				return -XMP_ERROR_LOAD;
+			}
 			D_(D_WARN "load format: %s", format_loader[i]->name);
-			load_result = format_loader[i]->loader(m, h, 0);
+			load_result = format_loader[i]->loader(m, buf, 0);
 			break;
 		}
 	}
 
 #ifndef LIBXMP_CORE_PLAYER
 	if (test_result == 0 && load_result == 0)
-		set_md5sum(h, m->md5);
+		set_md5sum(buf, m->md5);
 #endif
 
 	if (test_result < 0) {
@@ -291,74 +281,35 @@ static int load_module(xmp_context opaque, HIO_HANDLE *h)
 	return -XMP_ERROR_LOAD;
 }
 
-int xmp_load_module(xmp_context opaque, char *path)
+int xmp_load_module(xmp_context opaque, void *mem, long size)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 #ifndef LIBXMP_CORE_PLAYER
 	struct module_data *m = &ctx->m;
-	long size;
 #endif
-	HIO_HANDLE *h;
-	struct stat st;
+	struct libxmp_buffer *buf;
 	int ret;
 
-	D_(D_WARN "path = %s", path);
-
-	if (stat(path, &st) < 0) {
+	if ((buf = libxmp_buffer_new(mem, size)) == NULL) {
 		return -XMP_ERROR_SYSTEM;
 	}
-
-#ifndef _MSC_VER
-	if (S_ISDIR(st.st_mode)) {
-		errno = EISDIR;
-		return -XMP_ERROR_SYSTEM;
-	}
-#endif
-
-	if ((h = hio_open(path, "rb")) == NULL) {
-		return -XMP_ERROR_SYSTEM;
-	}
-
-#ifndef LIBXMP_CORE_PLAYER
-	size = hio_size(h);
-	if (size < 256) {		/* get size after decrunch */
-		ret = -XMP_ERROR_FORMAT;
-		goto err;
-	}
-#endif
-
-	if (ctx->state > XMP_STATE_UNLOADED)
+		
+	if (ctx->state > XMP_STATE_UNLOADED) {
 		xmp_release_module(opaque);
+	}
 
 #ifndef LIBXMP_CORE_PLAYER
-	m->dirname = get_dirname(path);
-	if (m->dirname == NULL) {
-		ret = -XMP_ERROR_SYSTEM;
-		goto err;
-	}
-
-	m->basename = get_basename(path);
-	if (m->basename == NULL) {
-		ret = -XMP_ERROR_SYSTEM;
-		goto err;
-	}
-
-	m->filename = path;	/* For ALM, SSMT, etc */
 	m->size = size;
 #endif
 
-	ret = load_module(opaque, h);
-	hio_close(h);
+	ret = load_module(opaque, buf);
+
+	libxmp_buffer_release(buf);
 
 	return ret;
-
-#ifndef LIBXMP_CORE_PLAYER
-    err:
-	hio_close(h);
-	return ret;
-#endif
 }
 
+#if 0
 int xmp_load_module_from_memory(xmp_context opaque, void *mem, long size)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
@@ -413,6 +364,7 @@ int xmp_load_module_from_file(xmp_context opaque, void *file, long size)
 
 	return ret;
 }
+#endif
 
 void xmp_release_module(xmp_context opaque)
 {

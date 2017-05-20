@@ -4,7 +4,7 @@
 #include <string.h>
 #include "buffer.h"
 
-struct libxmp_buffer *libxmp_new_buffer(unsigned char *p, size_t size)
+struct libxmp_buffer *libxmp_buffer_new(unsigned char *p, size_t size)
 {
 	struct libxmp_buffer *buf;
 
@@ -21,7 +21,7 @@ struct libxmp_buffer *libxmp_new_buffer(unsigned char *p, size_t size)
 	return NULL;
 }
 
-void libxmp_release_buffer(struct libxmp_buffer *buf)
+void libxmp_buffer_release(struct libxmp_buffer *buf)
 {
 	free(buf);
 }
