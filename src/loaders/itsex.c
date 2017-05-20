@@ -4,7 +4,7 @@
 
 #include "loader.h"
 
-static inline uint32 read_bits(HIO_HANDLE *ibuf, uint32 *bitbuf, int *bitnum, int n)
+static inline uint32 read_bits(struct libxmp_buffer *ibuf, uint32 *bitbuf, int *bitnum, int n)
 {
 	uint32 retval = 0;
 	int i = n;
@@ -13,7 +13,7 @@ static inline uint32 read_bits(HIO_HANDLE *ibuf, uint32 *bitbuf, int *bitnum, in
 	if (n > 0) {
 		do {
 			if (bnum == 0) {
-				bbuf = hio_read8(ibuf);
+				bbuf = libxmp_buffer_read8(ibuf);
 				bnum = 8;
 			}
 			retval >>= 1;
@@ -33,7 +33,7 @@ static inline uint32 read_bits(HIO_HANDLE *ibuf, uint32 *bitbuf, int *bitnum, in
 }
 
 
-int itsex_decompress8(HIO_HANDLE *src, uint8 *dst, int len, int it215)
+int itsex_decompress8(struct libxmp_buffer *src, uint8 *dst, int len, int it215)
 {
 	/* uint32 size = 0; */
 	uint32 block_count = 0;
@@ -45,7 +45,7 @@ int itsex_decompress8(HIO_HANDLE *src, uint8 *dst, int len, int it215)
 	while (len) {
 		if (!block_count) {
 			block_count = 0x8000;
-			/*size =*/ hio_read16l(src);
+			/*size =*/ libxmp_buffer_read16l(src);
 			left = 9;
 			temp = temp2 = 0;
 			bitbuf = bitnum = 0;
@@ -59,21 +59,14 @@ int itsex_decompress8(HIO_HANDLE *src, uint8 *dst, int len, int it215)
 		pos = 0;
 		do {
 			uint16 bits = read_bits(src, &bitbuf, &bitnum, left);
-			if (hio_eof(src))
-				return -1;
 
 			if (left < 7) {
 				uint32 i = 1 << (left - 1);
 				uint32 j = bits & 0xffff;
 				if (i != j)
 					goto unpack_byte;
-				bits = (read_bits(src, &bitbuf, &bitnum, 3)
-								+ 1) & 0xff;
-				if (hio_eof(src))
-					return -1;
-
-				left = ((uint8)bits < left) ?  (uint8)bits :
-						(uint8)((bits + 1) & 0xff);
+				bits = (read_bits(src, &bitbuf, &bitnum, 3) + 1) & 0xff;
+				left = ((uint8)bits < left) ?  (uint8)bits : (uint8)((bits + 1) & 0xff);
 				goto next;
 			}
 
@@ -128,7 +121,7 @@ int itsex_decompress8(HIO_HANDLE *src, uint8 *dst, int len, int it215)
 	return 0;
 }
 
-int itsex_decompress16(HIO_HANDLE *src, int16 *dst, int len, int it215)
+int itsex_decompress16(struct libxmp_buffer *src, int16 *dst, int len, int it215)
 {
 	/* uint32 size = 0; */
 	uint32 block_count = 0;
@@ -141,7 +134,7 @@ int itsex_decompress16(HIO_HANDLE *src, int16 *dst, int len, int it215)
 	while (len) {
 		if (!block_count) {
 			block_count = 0x4000;
-			/*size =*/ hio_read16l(src);
+			/*size =*/ libxmp_buffer_read16l(src);
 			left = 17;
 			temp = temp2 = 0;
 			bitbuf = bitnum = 0;
@@ -155,8 +148,6 @@ int itsex_decompress16(HIO_HANDLE *src, int16 *dst, int len, int it215)
 		pos = 0;
 		do {
 			uint32 bits = read_bits(src, &bitbuf, &bitnum, left);
-			if (hio_eof(src))
-				return -1;
 
 			if (left < 7) {
 				uint32 i = 1 << (left - 1);
@@ -166,9 +157,6 @@ int itsex_decompress16(HIO_HANDLE *src, int16 *dst, int len, int it215)
 					goto unpack_byte;
 
 				bits = read_bits(src, &bitbuf, &bitnum, 4) + 1;
-
-				if (hio_eof(src))
-					return -1;
 
 				left = ((uint8)(bits & 0xff) < left) ?
 						(uint8)(bits & 0xff) :

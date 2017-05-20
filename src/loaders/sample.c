@@ -195,7 +195,7 @@ static void unroll_loop(struct xmp_sample *xxs)
 }
 
 
-int libxmp_load_sample(struct module_data *m, HIO_HANDLE *f, int flags, struct xmp_sample *xxs, const void *buffer)
+int libxmp_load_sample(struct libxmp_buffer *buf, struct module_data *m, int flags, struct xmp_sample *xxs, const void *buffer)
 {
 	int bytelen, extralen, unroll_extralen, i;
 
@@ -219,8 +219,7 @@ int libxmp_load_sample(struct module_data *m, HIO_HANDLE *f, int flags, struct x
 	 */
 	if (xxs->len > MAX_SAMPLE_SIZE || (m && m->smpctl & XMP_SMPCTL_SKIP)) {
 		if (~flags & SAMPLE_FLAG_NOLOAD) {
-			/* coverity[check_return] */
-			hio_seek(f, xxs->len, SEEK_CUR);
+			libxmp_buffer_seek(buf, xxs->len, SEEK_CUR);
 		}
 		return 0;
 	}
@@ -285,18 +284,19 @@ int libxmp_load_sample(struct module_data *m, HIO_HANDLE *f, int flags, struct x
 		int x2 = (bytelen + 1) >> 1;
 		char table[16];
 
-		if (hio_read(table, 1, 16, f) != 16) {
+		if (libxmp_buffer_read(buf, table, 16) != 16) {
 			goto err2;
 		}
-		if (hio_read(xxs->data + x2, 1, x2, f) != x2) {
+		if (libxmp_buffer_read(buf, xxs->data + x2, x2) != x2) {
 			goto err2;
 		}
+
 		adpcm4_decoder((uint8 *)xxs->data + x2,
 			       (uint8 *)xxs->data, table, bytelen);
 	} else
 #endif
 	{
-		int x = hio_read(xxs->data, 1, bytelen, f);
+		int x = libxmp_buffer_read(buf, xxs->data, bytelen);
 		if (x != bytelen) {
 			D_(D_WARN "short read (%d) in sample load", x - bytelen);
 			memset(xxs->data + x, 0, bytelen - x);

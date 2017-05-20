@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include "buffer.h"
 
 struct libxmp_buffer *libxmp_buffer_new(unsigned char *p, size_t size)
@@ -26,14 +27,98 @@ void libxmp_buffer_release(struct libxmp_buffer *buf)
 	free(buf);
 }
 
-void *libxmp_buffer_read(struct libxmp_buffer *buf, void *dst, size_t size)
+#define ASSIGN_ENDIAN(T,fmt,f) do {					\
+	char e = *(fmt)++;						\
+	T *b = va_arg(ap, T *);						\
+	if (b != NULL) {						\
+		if (e == 'l') {						\
+			*b = (uint8)libxmp_buffer_read##f##l(buf);	\
+		} else if (e == 'b') {					\
+			*b = (uint8)libxmp_buffer_read##f##b(buf);	\
+		}							\
+	}								\
+} while (0)
+
+#define ASSIGN_VALUE(T,fmt,size) do {			\
+	switch (size) {					\
+	case 8:						\
+		{ T *b = va_arg(ap, T *);		\
+		*b = (T)libxmp_buffer_read8(buf);	\
+		break; }				\
+	case 16:					\
+		ASSIGN_ENDIAN(T, (fmt), 16);		\
+		break;					\
+	case 24:					\
+		ASSIGN_ENDIAN(T, (fmt), 24);		\
+		break;					\
+	case 32:					\
+		ASSIGN_ENDIAN(T, (fmt), 32);		\
+		break;					\
+	}						\
+} while (0)
+
+int libxmp_buffer_left(struct libxmp_buffer *buf)
+{
+	return buf->end - buf->pos;
+}
+
+int libxmp_buffer_scan(struct libxmp_buffer *buf, char *fmt, ...)
+{
+	va_list ap;
+	int size;
+	char t;
+
+	va_start(ap, fmt);
+
+	while ((t = *fmt) != 0) {
+		switch (*fmt++) {
+		case 's':
+			size = strtoul(fmt, &fmt, 10);
+			if (libxmp_buffer_read(buf, va_arg(ap, void *), size) != size) {
+				longjmp(buf->jmp, LIBXMP_BUFFER_ERANGE);
+			}
+			break;
+		case 'b':
+			size = strtoul(fmt, &fmt, 10);
+			ASSIGN_VALUE(uint8, fmt, size);
+			break;
+		case 'w':
+			size = strtoul(fmt, &fmt, 10);
+			ASSIGN_VALUE(uint16, fmt, size);
+			break;
+		case 'd':
+			size = strtoul(fmt, &fmt, 10);
+			ASSIGN_VALUE(uint32, fmt, size);
+			break;
+		default:
+			goto err;
+		}
+
+		if (*fmt == ';') {
+			fmt++;
+		} else if (*fmt != 0) {
+			goto err;
+		}
+	}
+
+	va_end(ap);
+	return 0;
+
+    err:
+	va_end(ap);
+	return -1;
+}
+
+int libxmp_buffer_read(struct libxmp_buffer *buf, void *dst, size_t size)
 {
 	/* check range */
 	if (buf->pos + size >= buf->end) {
-		longjmp(buf->jmp, LIBXMP_BUFFER_ERANGE);
+		size = buf->end - buf->pos;
 	}
 
-	return memcpy(dst, buf->pos, size);
+	memcpy(dst, buf->pos, size);
+
+	return size;
 }
 
 #define CHECK_RANGE(b,x) do {					\

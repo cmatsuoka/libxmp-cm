@@ -92,6 +92,7 @@ extern const struct pw_format *const pw_format[];
 
 const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
 	&libxmp_loader_xm,
+#if 0
 	&libxmp_loader_mod,
 	&libxmp_loader_flt,
 	&libxmp_loader_st,
@@ -153,6 +154,7 @@ const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
 	/* &libxmp_loader_polly, */
 	/* &libxmp_loader_stc, */
 	&libxmp_loader_pw,
+#endif
 	NULL
 };
 

@@ -203,7 +203,7 @@ static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
 				return -XMP_ERROR_LOAD;
 			}
 			D_(D_WARN "load format: %s", format_loader[i]->name);
-			load_result = format_loader[i]->loader(m, buf, 0);
+			load_result = format_loader[i]->loader(buf, m, 0);
 			break;
 		}
 	}

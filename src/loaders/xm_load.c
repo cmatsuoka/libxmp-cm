@@ -36,8 +36,8 @@
 #include "loader.h"
 #include "xm.h"
 
-static int xm_test(HIO_HANDLE *, char *, const int);
-static int xm_load(struct module_data *, HIO_HANDLE *, const int);
+static int xm_test(struct libxmp_buffer *, char *, const int);
+static int xm_load(struct libxmp_buffer *, struct module_data *, const int);
 
 const struct format_loader libxmp_loader_xm = {
 	"Fast Tracker II",
@@ -45,22 +45,24 @@ const struct format_loader libxmp_loader_xm = {
 	xm_load
 };
 
-static int xm_test(HIO_HANDLE *f, char *t, const int start)
+static int xm_test(struct libxmp_buffer *buf, char *t, const int start)
 {
-	char buf[20];
+	char b[20];
 
-	if (hio_read(buf, 1, 17, f) < 17)	/* ID text */
+	if (libxmp_buffer_read(buf, b, 17) != 17) {		/* ID text */
 		return -1;
+	}
 
-	if (memcmp(buf, "Extended Module: ", 17))
+	if (memcmp(buf, "Extended Module: ", 17)) {
 		return -1;
+	}
 
-	libxmp_read_title(f, t, 20);
+	libxmp_read_title(buf, t, 20);
 
 	return 0;
 }
 
-static int load_xm_pattern(struct module_data *m, int num, int version, HIO_HANDLE *f)
+static int load_xm_pattern(struct libxmp_buffer *buf, struct module_data *m, int num, int version)
 {
 	const int headsize = version > 0x0102 ? 9 : 8;
 	struct xmp_module *mod = &m->mod;
@@ -70,20 +72,17 @@ static int load_xm_pattern(struct module_data *m, int num, int version, HIO_HAND
 	int j, r;
 	int size;
 
-	xph.length = hio_read32l(f);
-	xph.packing = hio_read8(f);
-	xph.rows = version > 0x0102 ? hio_read16l(f) : hio_read8(f) + 1;
+	xph.length = libxmp_buffer_read32l(buf);
+	xph.packing = libxmp_buffer_read8(buf);
+	xph.rows = version > 0x0102 ? libxmp_buffer_read16l(buf) : libxmp_buffer_read8(buf) + 1;
 
 	/* Sanity check */
 	if (xph.rows > 256) {
 		goto err;
 	}
 
-	xph.datasize = hio_read16l(f);
-	hio_seek(f, xph.length - headsize, SEEK_CUR);
-	if (hio_error(f)) {
-		goto err;
-	}
+	xph.datasize = libxmp_buffer_read16l(buf);
+	libxmp_buffer_seek(buf, xph.length - headsize, SEEK_CUR);
 
 	r = xph.rows;
 	if (r == 0) {
@@ -105,7 +104,9 @@ static int load_xm_pattern(struct module_data *m, int num, int version, HIO_HAND
 		goto err;
 	}
 
-	hio_read(patbuf, 1, size, f);
+	if (libxmp_buffer_read(buf, patbuf, size) != size) {
+		goto err;
+	}
 	for (j = 0; j < (mod->chn * r); j++) {
 
 		/*if ((pat - patbuf) >= xph.datasize)
@@ -296,7 +297,7 @@ err:
 	return -1;
 }
 
-static int load_patterns(struct module_data *m, int version, HIO_HANDLE *f)
+static int load_patterns(struct libxmp_buffer *buf, struct module_data *m, int version)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j;
@@ -309,7 +310,7 @@ static int load_patterns(struct module_data *m, int version, HIO_HANDLE *f)
 	D_(D_INFO "Stored patterns: %d", mod->pat - 1);
 
 	for (i = 0; i < mod->pat - 1; i++) {
-		if (load_xm_pattern(m, i, version, f) < 0) {
+		if (load_xm_pattern(buf, m, i, version) < 0) {
 			goto err;
 		}
 	}
@@ -343,7 +344,7 @@ err:
 #define XM_INST_HEADER_SIZE 33
 #define XM_INST_SIZE 208
 
-static int load_instruments(struct module_data *m, int version, HIO_HANDLE * f)
+static int load_instruments(struct libxmp_buffer *buf, struct module_data *m, int version)
 {
 	struct xmp_module *mod = &m->mod;
 	struct xm_instrument_header xih;
@@ -351,7 +352,6 @@ static int load_instruments(struct module_data *m, int version, HIO_HANDLE * f)
 	struct xm_sample_header xsh[16];
 	int sample_num = 0;
 	int i, j;
-	uint8 buf[208];
 
 	D_(D_INFO "Instruments: %d", mod->ins);
 
@@ -369,16 +369,17 @@ static int load_instruments(struct module_data *m, int version, HIO_HANDLE * f)
 		 * XMLiTE stripped modules and truncated files. This test will not
 		 * work if file has trailing garbage.
 		 */
-		if (hio_read(buf, 33, 1, f) != 1) {
+		if (libxmp_buffer_left(buf) < 33) {
 			D_(D_WARN "short read in instrument header data");
 			break;
 		}
 
-		xih.size = readmem32l(buf);		/* Instrument size */
-		memcpy(xih.name, buf + 4, 22);		/* Instrument name */
-		xih.type = buf[26];			/* Instrument type (always 0) */
-		xih.samples = readmem16l(buf + 27);	/* Number of samples */
-		xih.sh_size = readmem32l(buf + 29);	/* Sample header size */
+		libxmp_buffer_scan(buf, "d32l;s22;b8;w16l;d32l",
+			&xih.size,		/* Instrument size */
+			&xih.name,		/* Instrument name */
+			&xih.type,		/* Instrument type (always 0) */
+			&xih.samples,		/* Number of samples */
+			&xih.sh_size);		/* Sample header size */
 
 		/* Sanity check */
 		if (xih.samples > 0x10 || (xih.samples > 0 && xih.sh_size > 0x100)) {
@@ -408,9 +409,7 @@ static int load_instruments(struct module_data *m, int version, HIO_HANDLE * f)
 			 * generalization should take care of both cases.
 			 */
 
-			if (hio_seek(f, (int)xih.size - XM_INST_HEADER_SIZE, SEEK_CUR) < 0) {
-				return -1;
-			}
+			libxmp_buffer_seek(buf, (int)xih.size - XM_INST_HEADER_SIZE, SEEK_CUR);
 
 			continue;
 		}
@@ -429,48 +428,40 @@ static int load_instruments(struct module_data *m, int version, HIO_HANDLE * f)
 		 */
 		if (xih.size < XM_INST_HEADER_SIZE + XM_INST_SIZE) {
 			memset(&xi, 0, sizeof(struct xm_instrument));
-			hio_seek(f, xih.size - XM_INST_HEADER_SIZE, SEEK_CUR);
+			libxmp_buffer_seek(buf, xih.size - XM_INST_HEADER_SIZE, SEEK_CUR);
 		} else {
-			uint8 *b = buf;
-
-			if (hio_read(buf, 208, 1, f) != 1) {
+			if (libxmp_buffer_read(buf, xi.sample, 96) != 96) {
 				D_(D_CRIT "short read in instrument data");
 				return -1;
 			}
 
-			memcpy(xi.sample, b, 96);		/* Sample map */
-			b += 96;
-
 			for (j = 0; j < 24; j++) {
-				xi.v_env[j] = readmem16l(b);	/* Points for volume envelope */
-				b += 2;
+				xi.v_env[j] = libxmp_buffer_read16l(buf);	/* Points for volume envelope */
 			}
 
 			for (j = 0; j < 24; j++) {
-				xi.p_env[j] = readmem16l(b);	/* Points for pan envelope */
-				b += 2;
+				xi.p_env[j] = libxmp_buffer_read16l(buf);	/* Points for pan envelope */
 			}
 
-			xi.v_pts = *b++;		/* Number of volume points */
-			xi.p_pts = *b++;		/* Number of pan points */
-			xi.v_sus = *b++;		/* Volume sustain point */
-			xi.v_start = *b++;		/* Volume loop start point */
-			xi.v_end = *b++;		/* Volume loop end point */
-			xi.p_sus = *b++;		/* Pan sustain point */
-			xi.p_start = *b++;		/* Pan loop start point */
-			xi.p_end = *b++;		/* Pan loop end point */
-			xi.v_type = *b++;		/* Bit 0:On 1:Sustain 2:Loop */
-			xi.p_type = *b++;		/* Bit 0:On 1:Sustain 2:Loop */
-			xi.y_wave = *b++;		/* Vibrato waveform */
-			xi.y_sweep = *b++;		/* Vibrato sweep */
-			xi.y_depth = *b++;		/* Vibrato depth */
-			xi.y_rate = *b++;		/* Vibrato rate */
-			xi.v_fade = readmem16l(b);	/* Volume fadeout */
+			libxmp_buffer_scan(buf, "b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;w16l",
+				&xi.v_pts,	/* Number of volume points */
+				&xi.p_pts,	/* Number of pan points */
+				&xi.v_sus,	/* Volume sustain point */
+				&xi.v_start,	/* Volume loop start point */
+				&xi.v_end,	/* Volume loop end point */
+				&xi.p_sus,	/* Pan sustain point */
+				&xi.p_start,	/* Pan loop start point */
+				&xi.p_end,	/* Pan loop end point */
+				&xi.v_type,	/* Bit 0:On 1:Sustain 2:Loop */
+				&xi.p_type,	/* Bit 0:On 1:Sustain 2:Loop */
+				&xi.y_wave,	/* Vibrato waveform */
+				&xi.y_sweep,	/* Vibrato sweep */
+				&xi.y_depth,	/* Vibrato depth */
+				&xi.y_rate,	/* Vibrato rate */
+				&xi.v_fade);	/* Volume fadeout */
 
 			/* Skip reserved space */
-			if (hio_seek(f, (int)xih.size - (XM_INST_HEADER_SIZE + XM_INST_SIZE), SEEK_CUR) < 0) {
-				return -1;
-			}
+			libxmp_buffer_seek(buf, (int)xih.size - (XM_INST_HEADER_SIZE + XM_INST_SIZE), SEEK_CUR);
 
 			/* Envelope */
 			xxi->rls = xi.v_fade << 1;
@@ -507,7 +498,6 @@ static int load_instruments(struct module_data *m, int version, HIO_HANDLE * f)
 		for (j = 0; j < xxi->nsm; j++, sample_num++) {
 			struct xmp_subinstrument *sub = &xxi->sub[j];
 			struct xmp_sample *xxs;
-			uint8 *b = buf;
 
 			if (sample_num >= mod->smp) {
 				mod->xxs = libxmp_realloc_samples(mod->xxs, &mod->smp, mod->smp * 3 / 2);
@@ -516,31 +506,23 @@ static int load_instruments(struct module_data *m, int version, HIO_HANDLE * f)
 			}
 			xxs = &mod->xxs[sample_num];
 
-			if (hio_read(buf, 40, 1, f) != 1) {
-				D_(D_CRIT "short read in sample data");
-				return -1;
-			}
-
-			xsh[j].length = readmem32l(b);	/* Sample length */
-			b += 4;
+			libxmp_buffer_scan(buf, "d32l;d32l;d32;b8;b8;b8;b8;b8;b8;s22",
+				&xsh[j].length,		/* Sample length */
+				&xsh[j].loop_start,	/* Sample loop start */
+				&xsh[j].loop_length,	/* Sample loop length */
+				&xsh[j].volume,		/* Volume */
+				&xsh[j].finetune,	/* Finetune (-128..+127) */
+				&xsh[j].type,		/* Flags */
+				&xsh[j].pan,		/* Panning (0-255) */
+				&xsh[j].relnote,	/* Relative note number */
+				&xsh[j].reserved,
+				&xsh[j].name);
 
 			/* Sanity check */
 			if (xsh[j].length > MAX_SAMPLE_SIZE) {
 				D_(D_CRIT "sanity check: %d: bad sample size", j);
 				return -1;
 			}
-
-			xsh[j].loop_start = readmem32l(b);	/* Sample loop start */
-			b += 4;
-			xsh[j].loop_length = readmem32l(b);	/* Sample loop length */
-			b += 4;
-			xsh[j].volume = *b++;	/* Volume */
-			xsh[j].finetune = *b++;	/* Finetune (-128..+127) */
-			xsh[j].type = *b++;	/* Flags */
-			xsh[j].pan = *b++;	/* Panning (0-255) */
-			xsh[j].relnote = *(int8 *) b++;	/* Relative note number */
-			xsh[j].reserved = *b++;
-			memcpy(xsh[j].name, b, 22);
 
 			sub->vol = xsh[j].volume;
 			sub->pan = xsh[j].pan;
@@ -591,7 +573,7 @@ static int load_instruments(struct module_data *m, int version, HIO_HANDLE * f)
 #endif
 
 			if (version > 0x0103) {
-				if (libxmp_load_sample(m, f, flags, &mod->xxs[sub->sid], NULL) < 0) {
+				if (libxmp_load_sample(buf, m, flags, &mod->xxs[sub->sid], NULL) < 0) {
 					return -1;
 				}
 			}
@@ -607,36 +589,31 @@ static int load_instruments(struct module_data *m, int version, HIO_HANDLE * f)
 	return 0;
 }
 
-static int xm_load(struct module_data *m, HIO_HANDLE * f, const int start)
+static int xm_load(struct libxmp_buffer *buf, struct module_data *m, const int start)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j;
 	struct xm_file_header xfh;
 	char tracker_name[21];
 	int len;
-	uint8 buf[80];
 
 	LOAD_INIT();
 
-	if (hio_read(buf, 80, 1, f) != 1) {
-		D_(D_CRIT "error reading header");
-		return -1;
-	}
-
-	memcpy(xfh.id, buf, 17);		/* ID text */
-	memcpy(xfh.name, buf + 17, 20);		/* Module name */
-	/* */					/* skip 0x1a */
-	memcpy(xfh.tracker, buf + 38, 20);	/* Tracker name */
-	xfh.version = readmem16l(buf + 58);	/* Version number, minor-major */
-	xfh.headersz = readmem32l(buf + 60);	/* Header size */
-	xfh.songlen = readmem16l(buf + 64);	/* Song length */
-	xfh.restart = readmem16l(buf + 66);	/* Restart position */
-	xfh.channels = readmem16l(buf + 68);	/* Number of channels */
-	xfh.patterns = readmem16l(buf + 70);	/* Number of patterns */
-	xfh.instruments = readmem16l(buf + 72);	/* Number of instruments */
-	xfh.flags = readmem16l(buf + 74);	/* 0=Amiga freq table, 1=Linear */
-	xfh.tempo = readmem16l(buf + 76);	/* Default tempo */
-	xfh.bpm = readmem16l(buf + 78);		/* Default BPM */
+	libxmp_buffer_scan(buf, "s17;s20;d8;s20;w16l;d32l;w16l;w16l;w16l;w16l;w16l;w16l;w16l;w16l",
+		&xfh.id,		/* ID text */
+		&xfh.name,		/* Module name */
+		NULL,			/* skip 0x1a */
+		&xfh.tracker,		/* Tracker name */
+		&xfh.version,		/* Version number, minor-major */
+		&xfh.headersz,		/* Header size */
+		&xfh.songlen,		/* Song length */
+		&xfh.restart,		/* Restart position */
+		&xfh.channels,		/* Number of channels */
+		&xfh.patterns,		/* Number of patterns */
+		&xfh.instruments,	/* Number of instruments */
+		&xfh.flags,		/* 0=Amiga freq table, 1=Linear */
+		&xfh.tempo,		/* Default tempo */
+		&xfh.bpm);		/* Default bpm */
 
 	/* Sanity checks */
 	if (xfh.songlen > 256 || xfh.patterns > 256 || xfh.instruments > 255) {
@@ -663,7 +640,7 @@ static int xm_load(struct module_data *m, HIO_HANDLE * f, const int start)
 		return -1;
 	}
 
-	if (hio_read(&xfh.order, len, 1, f) != 1) {	/* Pattern order table */
+	if (libxmp_buffer_read(buf, &xfh.order, len) != len) {		/* Pattern order table */
 		D_(D_CRIT "error reading orders");
 		return -1;
 	}
@@ -727,23 +704,21 @@ static int xm_load(struct module_data *m, HIO_HANDLE * f, const int start)
 	MODULE_INFO();
 
 	/* Honor header size */
-	if (hio_seek(f, start + xfh.headersz + 60, SEEK_SET) < 0) {
-		return -1;
-	}
+	libxmp_buffer_seek(buf, start + xfh.headersz + 60, SEEK_SET);
 
 	/* XM 1.02/1.03 has a different patterns and instruments order */
 	if (xfh.version <= 0x0103) {
-		if (load_instruments(m, xfh.version, f) < 0) {
+		if (load_instruments(buf, m, xfh.version) < 0) {
 			return -1;
 		}
-		if (load_patterns(m, xfh.version, f) < 0) {
+		if (load_patterns(buf, m, xfh.version) < 0) {
 			return -1;
 		}
 	} else {
-		if (load_patterns(m, xfh.version, f) < 0) {
+		if (load_patterns(buf, m, xfh.version) < 0) {
 			return -1;
 		}
-		if (load_instruments(m, xfh.version, f) < 0) {
+		if (load_instruments(buf, m, xfh.version) < 0) {
 			return -1;
 		}
 	}
@@ -755,7 +730,7 @@ static int xm_load(struct module_data *m, HIO_HANDLE * f, const int start)
 		for (i = 0; i < mod->ins; i++) {
 			for (j = 0; j < mod->xxi[i].nsm; j++) {
 				int sid = mod->xxi[i].sub[j].sid;
-				if (libxmp_load_sample(m, f, SAMPLE_FLAG_DIFF, &mod->xxs[sid], NULL) < 0) {
+				if (libxmp_load_sample(buf, m, SAMPLE_FLAG_DIFF, &mod->xxs[sid], NULL) < 0) {
 					return -1;
 				}
 			}

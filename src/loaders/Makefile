@@ -1,5 +1,7 @@
 
-LOADERS	= xm_load.o mod_load.o s3m_load.o stm_load.o 669_load.o far_load.o \
+LOADERS = xm_load.o
+
+OLDLOADERS	= xm_load.o mod_load.o s3m_load.o stm_load.o 669_load.o far_load.o \
 	  mtm_load.o ptm_load.o okt_load.o ult_load.o mdl_load.o it_load.o \
 	  stx_load.o pt3_load.o sfx_load.o flt_load.o st_load.o emod_load.o \
 	  imf_load.o digi_load.o fnk_load.o ice_load.o liq_load.o ims_load.o \
@@ -9,7 +11,7 @@ LOADERS	= xm_load.o mod_load.o s3m_load.o stm_load.o 669_load.o far_load.o \
 	  gdm_load.o pw_load.o gal5_load.o gal4_load.o mfp_load.o asylum_load.o \
 	  hmn_load.o mgt_load.o chip_load.o abk_load.o
 
-LOADERS_OBJS	= common.o iff.o itsex.o asif.o voltable.o sample.o $(LOADERS)
+LOADERS_OBJS	= common.o iff.o itsex.o voltable.o sample.o $(LOADERS)
 LOADERS_DFILES	= Makefile $(LOADERS_OBJS:.o=.c) \
 		  asif.h iff.h it.h loader.h med.h mod.h s3m.h xm.h
 LOADERS_PATH	= src/loaders

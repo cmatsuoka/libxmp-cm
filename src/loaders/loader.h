@@ -7,7 +7,7 @@
 #include "common.h"
 #include "effects.h"
 #include "format.h"
-#include "hio.h"
+#include "buffer.h"
 
 /* Sample flags */
 #define SAMPLE_FLAG_DIFF	0x0001	/* Differential */
@@ -37,7 +37,7 @@ struct xmp_sample* libxmp_realloc_samples(struct xmp_sample *, int *, int);
 
 char	*libxmp_copy_adjust		(char *, uint8 *, int);
 int	libxmp_test_name		(uint8 *, int);
-void	libxmp_read_title		(HIO_HANDLE *, char *, int);
+void	libxmp_read_title		(struct libxmp_buffer *, char *, int);
 void	libxmp_set_xxh_defaults		(struct xmp_module *);
 void	libxmp_decode_protracker_event	(struct xmp_event *, uint8 *);
 void	libxmp_decode_noisetracker_event(struct xmp_event *, uint8 *);
@@ -45,7 +45,7 @@ void	libxmp_disable_continue_fx	(struct xmp_event *);
 int	libxmp_check_filename_case	(char *, char *, char *, int);
 void	libxmp_get_instrument_path	(struct module_data *, char *, int);
 void	libxmp_set_type			(struct module_data *, const char *, ...);
-int	libxmp_load_sample		(struct module_data *, HIO_HANDLE *, int,
+int	libxmp_load_sample		(struct libxmp_buffer *, struct module_data *, int,
 					 struct xmp_sample *, const void *);
 
 extern uint8		libxmp_ord_xlat[];

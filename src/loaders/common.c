@@ -190,21 +190,22 @@ char *libxmp_copy_adjust(char *s, uint8 *r, int n)
 	return s;
 }
 
-void libxmp_read_title(HIO_HANDLE *f, char *t, int s)
+void libxmp_read_title(struct libxmp_buffer *buf, char *t, int s)
 {
-	uint8 buf[XMP_NAME_SIZE];
+	uint8 name[XMP_NAME_SIZE];
 
 	if (t == NULL)
 		return;
 
-	if (s >= XMP_NAME_SIZE)
+	if (s >= XMP_NAME_SIZE) {
 		s = XMP_NAME_SIZE -1;
+	}
 
 	memset(t, 0, s + 1);
 
-	hio_read(buf, 1, s, f);		/* coverity[check_return] */
-	buf[s] = 0;
-	libxmp_copy_adjust(t, buf, s);
+	libxmp_buffer_read(buf, name, s);
+	name[s] = 0;
+	libxmp_copy_adjust(t, name, s);
 }
 
 #ifndef LIBXMP_CORE_PLAYER

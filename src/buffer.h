@@ -18,7 +18,9 @@ struct libxmp_buffer {
 
 struct libxmp_buffer	*libxmp_buffer_new(unsigned char *, size_t);
 void	libxmp_buffer_release	(struct libxmp_buffer *);
-void	*libxmp_buffer_read	(struct libxmp_buffer *, void *, size_t);
+int	libxmp_buffer_left	(struct libxmp_buffer *);
+int	libxmp_buffer_scan	(struct libxmp_buffer *, char *, ...);
+int	libxmp_buffer_read	(struct libxmp_buffer *, void *, size_t);
 void	libxmp_buffer_seek	(struct libxmp_buffer *, long, int);
 long	libxmp_buffer_tell	(struct libxmp_buffer *);
 uint8	libxmp_buffer_read8	(struct libxmp_buffer *);
