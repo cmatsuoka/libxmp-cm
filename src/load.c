@@ -83,39 +83,6 @@ static void set_md5sum(LIBXMP_BUFFER buf, unsigned char *digest)
 */
 }
 
-/*
-static char *get_dirname(char *name)
-{
-	char *div, *dirname;
-	int len;
-
-	if ((div = strrchr(name, '/'))) {
-		len = div - name + 1;
-		dirname = malloc(len + 1);
-		if (dirname != NULL) {
-			memcpy(dirname, name, len);
-			dirname[len] = 0;
-		}
-	} else {
-		dirname = strdup("");
-	}
-
-	return dirname;
-}
-
-static char *get_basename(char *name)
-{
-	char *div, *basename;
-
-	if ((div = strrchr(name, '/'))) {
-		basename = strdup(div + 1);
-	} else {
-		basename = strdup(name);
-	}
-
-	return basename;
-}
-*/
 #endif /* LIBXMP_CORE_PLAYER */
 
 int xmp_test_module(void *src, long size, struct xmp_test_info *info)

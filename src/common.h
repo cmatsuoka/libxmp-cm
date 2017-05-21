@@ -201,6 +201,8 @@ struct module_data {
 
 
 struct player_data {
+	LIBXMP_MEM mem;
+
 	int ord;
 	int pos;
 	int row;

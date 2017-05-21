@@ -42,6 +42,12 @@ xmp_context xmp_create_context()
 		goto err;
 	}
 
+	/* player memory */
+	if ((ctx->p.mem = libxmp_mem_new()) == NULL) {
+		goto err2;
+	}
+
+	/* module memory */
 	if ((ctx->m.mem = libxmp_mem_new()) == NULL) {
 		goto err2;
 	}
@@ -67,6 +73,7 @@ void xmp_free_context(xmp_context opaque)
 	}
 
 	libxmp_mem_release(ctx->m.mem);
+	libxmp_mem_release(ctx->p.mem);
 	free(opaque);
 }
 
