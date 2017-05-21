@@ -36,8 +36,8 @@
 #include "loader.h"
 #include "xm.h"
 
-static int xm_test(struct libxmp_buffer *, char *, const int);
-static int xm_load(struct libxmp_buffer *, struct module_data *, const int);
+static int xm_test(struct libxmp_mem *, struct libxmp_buffer *, char *, const int);
+static int xm_load(struct libxmp_mem *, struct libxmp_buffer *, struct module_data *, const int);
 
 const struct format_loader libxmp_loader_xm = {
 	"Fast Tracker II",
@@ -45,7 +45,7 @@ const struct format_loader libxmp_loader_xm = {
 	xm_load
 };
 
-static int xm_test(struct libxmp_buffer *buf, char *t, const int start)
+static int xm_test(struct libxmp_mem *mem, struct libxmp_buffer *buf, char *t, const int start)
 {
 	char b[20];
 
@@ -62,7 +62,7 @@ static int xm_test(struct libxmp_buffer *buf, char *t, const int start)
 	return 0;
 }
 
-static int load_xm_pattern(struct libxmp_buffer *buf, struct module_data *m, int num, int version)
+static int load_xm_pattern(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct module_data *m, int num, int version)
 {
 	const int headsize = version > 0x0102 ? 9 : 8;
 	struct xmp_module *mod = &m->mod;
@@ -78,7 +78,7 @@ static int load_xm_pattern(struct libxmp_buffer *buf, struct module_data *m, int
 
 	/* Sanity check */
 	if (xph.rows > 256) {
-		goto err;
+		return -1;
 	}
 
 	xph.datasize = libxmp_buffer_read16l(buf);
@@ -89,8 +89,8 @@ static int load_xm_pattern(struct libxmp_buffer *buf, struct module_data *m, int
 		r = 0x100;
 	}
 
-	if (libxmp_alloc_pattern_tracks(mod, num, r) < 0) {
-		goto err;
+	if (libxmp_alloc_pattern_tracks(mem, mod, num, r) < 0) {
+		return -1;
 	}
 
 	if (xph.datasize == 0) {
@@ -99,13 +99,10 @@ static int load_xm_pattern(struct libxmp_buffer *buf, struct module_data *m, int
 
 	size = xph.datasize;
 
-	pat = patbuf = calloc(1, size);
-	if (patbuf == NULL) {
-		goto err;
-	}
+	pat = patbuf = libxmp_mem_calloc(mem, size);
 
 	if (libxmp_buffer_read(buf, patbuf, size) != size) {
-		goto err;
+		return -1;
 	}
 	for (j = 0; j < (mod->chn * r); j++) {
 
@@ -115,39 +112,40 @@ static int load_xm_pattern(struct libxmp_buffer *buf, struct module_data *m, int
 		event = &EVENT(num, j % mod->chn, j / mod->chn);
 
 		if (--size < 0) {
-			goto err2;
+			return -1;
 		}
 
 		if ((b = *pat++) & XM_EVENT_PACKING) {
 			if (b & XM_EVENT_NOTE_FOLLOWS) {
 				if (--size < 0)
-					goto err2;
+					return -1;
 				event->note = *pat++;
 			}
 			if (b & XM_EVENT_INSTRUMENT_FOLLOWS) {
 				if (--size < 0)
-					goto err2;
+					return -1;
 				event->ins = *pat++;
 			}
 			if (b & XM_EVENT_VOLUME_FOLLOWS) {
 				if (--size < 0)
-					goto err2;
+					return -1;
 				event->vol = *pat++;
 			}
 			if (b & XM_EVENT_FXTYPE_FOLLOWS) {
 				if (--size < 0)
-					goto err2;
+					return -1;
 				event->fxt = *pat++;
 			}
 			if (b & XM_EVENT_FXPARM_FOLLOWS) {
 				if (--size < 0)
-					goto err2;
+					return -1;
 				event->fxp = *pat++;
 			}
 		} else {
 			size -= 4;
-			if (size < 0)
-				goto err2;
+			if (size < 0) {
+				return -1;
+			}
 			event->note = b;
 			event->ins = *pat++;
 			event->vol = *pat++;
@@ -287,31 +285,23 @@ static int load_xm_pattern(struct libxmp_buffer *buf, struct module_data *m, int
 		}
 		event->vol = 0;
 	}
-	free(patbuf);
 
 	return 0;
-
-err2:
-	free(patbuf);
-err:
-	return -1;
 }
 
-static int load_patterns(struct libxmp_buffer *buf, struct module_data *m, int version)
+static int load_patterns(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct module_data *m, int version)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j;
 
 	mod->pat++;
-	if (libxmp_init_pattern(mod) < 0) {
-		return -1;
-	}
+	libxmp_init_pattern(mem, mod);
 
 	D_(D_INFO "Stored patterns: %d", mod->pat - 1);
 
 	for (i = 0; i < mod->pat - 1; i++) {
-		if (load_xm_pattern(buf, m, i, version) < 0) {
-			goto err;
+		if (load_xm_pattern(mem, buf, m, i, version) < 0) {
+			return -1;
 		}
 	}
 
@@ -319,14 +309,14 @@ static int load_patterns(struct libxmp_buffer *buf, struct module_data *m, int v
 	{
 		int t = i * mod->chn;
 
-		if (libxmp_alloc_pattern(mod, i) < 0) {
-			goto err;
+		if (libxmp_alloc_pattern(mem, mod, i) < 0) {
+			return -1;
 		}
 
 		mod->xxp[i]->rows = 64;
 
-		if (libxmp_alloc_track(mod, t, 64) < 0) {
-			goto err;
+		if (libxmp_alloc_track(mem, mod, t, 64) < 0) {
+			return -1;
 		}
 
 		for (j = 0; j < mod->chn; j++) {
@@ -335,16 +325,13 @@ static int load_patterns(struct libxmp_buffer *buf, struct module_data *m, int v
 	}
 
 	return 0;
-
-err:
-	return -1;
 }
 
 /* Packed structures size */
 #define XM_INST_HEADER_SIZE 33
 #define XM_INST_SIZE 208
 
-static int load_instruments(struct libxmp_buffer *buf, struct module_data *m, int version)
+static int load_instruments(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct module_data *m, int version)
 {
 	struct xmp_module *mod = &m->mod;
 	struct xm_instrument_header xih;
@@ -358,8 +345,7 @@ static int load_instruments(struct libxmp_buffer *buf, struct module_data *m, in
 	/* ESTIMATED value! We don't know the actual value at this point */
 	mod->smp = MAX_SAMPLES;
 
-	if (libxmp_init_instrument(m) < 0)
-		return -1;
+	libxmp_init_instrument(mem, m);
 
 	for (i = 0; i < mod->ins; i++) {
 		struct xmp_instrument *xxi = &mod->xxi[i];
@@ -416,9 +402,7 @@ printf("instrument %d: size=%d name=%22.22s type=%d samples=%d\n", i, xih.size, 
 			continue;
 		}
 
-		if (libxmp_alloc_subinstrument(mod, i, xxi->nsm) < 0) {
-			return -1;
-		}
+		libxmp_alloc_subinstrument(mem, mod, i, xxi->nsm);
 
 		if (xih.size < XM_INST_HEADER_SIZE) {
 			return -1;
@@ -591,7 +575,7 @@ printf("instrument %d: size=%d name=%22.22s type=%d samples=%d\n", i, xih.size, 
 	return 0;
 }
 
-static int xm_load(struct libxmp_buffer *buf, struct module_data *m, const int start)
+static int xm_load(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct module_data *m, const int start)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j;
@@ -712,17 +696,17 @@ static int xm_load(struct libxmp_buffer *buf, struct module_data *m, const int s
 
 	/* XM 1.02/1.03 has a different patterns and instruments order */
 	if (xfh.version <= 0x0103) {
-		if (load_instruments(buf, m, xfh.version) < 0) {
+		if (load_instruments(mem, buf, m, xfh.version) < 0) {
 			return -1;
 		}
-		if (load_patterns(buf, m, xfh.version) < 0) {
+		if (load_patterns(mem, buf, m, xfh.version) < 0) {
 			return -1;
 		}
 	} else {
-		if (load_patterns(buf, m, xfh.version) < 0) {
+		if (load_patterns(mem, buf, m, xfh.version) < 0) {
 			return -1;
 		}
-		if (load_instruments(buf, m, xfh.version) < 0) {
+		if (load_instruments(mem, buf, m, xfh.version) < 0) {
 			return -1;
 		}
 	}

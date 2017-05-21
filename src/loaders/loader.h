@@ -8,6 +8,7 @@
 #include "effects.h"
 #include "format.h"
 #include "buffer.h"
+#include "mem.h"
 
 /* Sample flags */
 #define SAMPLE_FLAG_DIFF	0x0001	/* Differential */
@@ -25,13 +26,13 @@
 
 #define DEFPAN(x) (0x80 + ((x) - 0x80) * m->defpan / 100)
 
-int	libxmp_init_instrument		(struct module_data *);
-int	libxmp_alloc_subinstrument	(struct xmp_module *, int, int);
-int	libxmp_init_pattern		(struct xmp_module *);
-int	libxmp_alloc_pattern		(struct xmp_module *, int);
-int	libxmp_alloc_track		(struct xmp_module *, int, int);
-int	libxmp_alloc_tracks_in_pattern	(struct xmp_module *, int);
-int	libxmp_alloc_pattern_tracks	(struct xmp_module *, int, int);
+void	libxmp_init_instrument		(struct libxmp_mem *, struct module_data *);
+void	libxmp_alloc_subinstrument	(struct libxmp_mem *, struct xmp_module *, int, int);
+void	libxmp_init_pattern		(struct libxmp_mem *, struct xmp_module *);
+int	libxmp_alloc_pattern		(struct libxmp_mem *, struct xmp_module *, int);
+int	libxmp_alloc_track		(struct libxmp_mem *, struct xmp_module *, int, int);
+int	libxmp_alloc_tracks_in_pattern	(struct libxmp_mem *, struct xmp_module *, int);
+int	libxmp_alloc_pattern_tracks	(struct libxmp_mem *, struct xmp_module *, int, int);
 char	*libxmp_instrument_name		(struct xmp_module *, int, uint8 *, int);
 struct xmp_sample* libxmp_realloc_samples(struct xmp_sample *, int *, int);
 

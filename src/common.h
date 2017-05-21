@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "types.h"
+#include "mem.h"
 #include "xmp.h"
 
 #if (defined(__GNUC__) || defined(__clang__)) && defined(XMP_SYM_VISIBILITY)
@@ -222,10 +223,8 @@ struct extra_sample_data {
 
 struct module_data {
 	struct xmp_module mod;
+	struct libxmp_mem mem;
 
-	char *dirname;			/* file dirname */
-	char *basename;			/* file basename */
-	char *filename;			/* Module file name */
 	char *comment;			/* Comments, if any */
 	uint8 md5[16];			/* MD5 message digest */
 	int size;			/* File size */

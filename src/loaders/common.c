@@ -34,90 +34,67 @@
 #include "period.h"
 #include "loader.h"
 
-int libxmp_init_instrument(struct module_data *m)
+void libxmp_init_instrument(struct libxmp_mem *mem, struct module_data *m)
 {
 	struct xmp_module *mod = &m->mod;
 
 	if (mod->ins > 0) {
-		mod->xxi = calloc(sizeof (struct xmp_instrument), mod->ins);
-		if (mod->xxi == NULL)
-			return -1;
+		mod->xxi = libxmp_mem_calloc(mem, sizeof (struct xmp_instrument) * mod->ins);
 	}
 
 	if (mod->smp > 0) {
 		int i;
 
-		mod->xxs = calloc(sizeof (struct xmp_sample), mod->smp);
-		if (mod->xxs == NULL)
-			return -1;
-		m->xtra = calloc(sizeof (struct extra_sample_data), mod->smp);
-		if (m->xtra == NULL)
-			return -1;
+		mod->xxs = libxmp_mem_calloc(mem, sizeof (struct xmp_sample) * mod->smp);
+		m->xtra = libxmp_mem_calloc(mem, sizeof (struct extra_sample_data) * mod->smp);
 
 		for (i = 0; i < mod->smp; i++) {
 			m->xtra[i].c5spd = m->c4rate;
 		}
 	}
-
-	return 0;
 }
 
-int libxmp_alloc_subinstrument(struct xmp_module *mod, int i, int num)
+void libxmp_alloc_subinstrument(struct libxmp_mem *mem, struct xmp_module *mod, int i, int num)
 {
-	if (num == 0)
-		return 0;
+	if (num == 0) {
+		return;
+	}
 
-	mod->xxi[i].sub = calloc(sizeof (struct xmp_subinstrument), num);
-	if (mod->xxi[i].sub == NULL)
-		return -1;
-
-	return 0;
+	mod->xxi[i].sub = libxmp_mem_calloc(mem, sizeof (struct xmp_subinstrument) * num);
 }
 
-int libxmp_init_pattern(struct xmp_module *mod)
+void libxmp_init_pattern(struct libxmp_mem *mem, struct xmp_module *mod)
 {
-	mod->xxt = calloc(sizeof (struct xmp_track *), mod->trk);
-	if (mod->xxt == NULL)
-		return -1;
-
-	mod->xxp = calloc(sizeof (struct xmp_pattern *), mod->pat);
-	if (mod->xxp == NULL)
-		return -1;
-
-	return 0;
+	mod->xxt = libxmp_mem_calloc(mem, sizeof (struct xmp_track *) * mod->trk);
+	mod->xxp = libxmp_mem_calloc(mem, sizeof (struct xmp_pattern *) * mod->pat);
 }
 
-int libxmp_alloc_pattern(struct xmp_module *mod, int num)
+int libxmp_alloc_pattern(struct libxmp_mem *mem, struct xmp_module *mod, int num)
 {
 	/* Sanity check */
-	if (num < 0 || num >= mod->pat || mod->xxp[num] != NULL)
+	if (num < 0 || num >= mod->pat || mod->xxp[num] != NULL) {
 		return -1;
+	}
 
-	mod->xxp[num] = calloc(1, sizeof (struct xmp_pattern) +
-        				sizeof (int) * (mod->chn - 1));
-	if (mod->xxp[num] == NULL)
-		return -1;
+	mod->xxp[num] = libxmp_mem_calloc(mem, sizeof (struct xmp_pattern) + sizeof (int) * (mod->chn - 1));
 
 	return 0;
 }
 
-int libxmp_alloc_track(struct xmp_module *mod, int num, int rows)
+int libxmp_alloc_track(struct libxmp_mem *mem, struct xmp_module *mod, int num, int rows)
 {
 	/* Sanity check */
-	if (num < 0 || num >= mod->trk || mod->xxt[num] != NULL || rows <= 0)
+	if (num < 0 || num >= mod->trk || mod->xxt[num] != NULL || rows <= 0) {
 		return -1;
+	}
 
-	mod->xxt[num] = calloc(sizeof (struct xmp_track) +
-			       sizeof (struct xmp_event) * (rows - 1), 1);
-	if (mod->xxt[num] == NULL)
-		return -1;
-
+	mod->xxt[num] = libxmp_mem_calloc(mem, sizeof (struct xmp_track) + sizeof (struct xmp_event) * (rows - 1));
 	mod->xxt[num]->rows = rows;
 
 	return 0;
 }
 
-int libxmp_alloc_tracks_in_pattern(struct xmp_module *mod, int num)
+int libxmp_alloc_tracks_in_pattern(struct libxmp_mem *mem, struct xmp_module *mod, int num)
 {
 	int i;
 
@@ -126,8 +103,9 @@ int libxmp_alloc_tracks_in_pattern(struct xmp_module *mod, int num)
 		int t = num * mod->chn + i;
 		int rows = mod->xxp[num]->rows;
 
-		if (libxmp_alloc_track(mod, t, rows) < 0)
+		if (libxmp_alloc_track(mem, mod, t, rows) < 0) {
 			return -1;
+		}
 
 		mod->xxp[num]->index[i] = t;
 	}
@@ -135,19 +113,22 @@ int libxmp_alloc_tracks_in_pattern(struct xmp_module *mod, int num)
 	return 0;
 }
 
-int libxmp_alloc_pattern_tracks(struct xmp_module *mod, int num, int rows)
+int libxmp_alloc_pattern_tracks(struct libxmp_mem *mem, struct xmp_module *mod, int num, int rows)
 {
 	/* Sanity check */
-	if (rows < 0 || rows > 256)
+	if (rows < 0 || rows > 256) {
 		return -1;
+	}
 
-	if (libxmp_alloc_pattern(mod, num) < 0)
+	if (libxmp_alloc_pattern(mem, mod, num) < 0) {
 		return -1;
+	}
 
 	mod->xxp[num]->rows = rows;
 
-	if (libxmp_alloc_tracks_in_pattern(mod, num) < 0)
+	if (libxmp_alloc_tracks_in_pattern(mem, mod, num) < 0) {
 		return -1;
+	}
 
 	return 0;
 }

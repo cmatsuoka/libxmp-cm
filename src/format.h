@@ -4,11 +4,12 @@
 #include <stdio.h>
 #include "common.h"
 #include "buffer.h"
+#include "mem.h"
 
 struct format_loader {
 	const char *name;
-	int (*const test)(struct libxmp_buffer *, char *, const int);
-	int (*const loader)(struct libxmp_buffer *, struct module_data *, const int);
+	int (*const test)(struct libxmp_mem *, struct libxmp_buffer *, char *, const int);
+	int (*const loader)(struct libxmp_mem *, struct libxmp_buffer *, struct module_data *, const int);
 };
 
 char **format_list(void);

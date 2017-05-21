@@ -310,6 +310,7 @@ int libxmp_prepare_scan(struct context_data *ctx)
 {
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
+	struct libxmp_mem *mem = &m->mem;
 	int i, ord;
 
 	if (mod->xxp == NULL || mod->xxt == NULL)
@@ -324,9 +325,7 @@ int libxmp_prepare_scan(struct context_data *ctx)
 		return 0;
 	}
 
-	m->scan_cnt = calloc(sizeof (char *), mod->len);
-	if (m->scan_cnt == NULL)
-		return -XMP_ERROR_SYSTEM;
+	m->scan_cnt = libxmp_mem_calloc(mem, sizeof (char *) * mod->len);
 
 	for (i = 0; i < mod->len; i++) {
 		int pat_idx = mod->xxo[i];
@@ -334,15 +333,13 @@ int libxmp_prepare_scan(struct context_data *ctx)
 
 		/* Add pattern if referenced in orders */
 		if (pat_idx < mod->pat && !mod->xxp[pat_idx]) {
-			if (libxmp_alloc_pattern(mod, pat_idx) < 0) {
+			if (libxmp_alloc_pattern(mem, mod, pat_idx) < 0) {
 				return -XMP_ERROR_SYSTEM;
 			}
 		}
 
 		pat = pat_idx >= mod->pat ? NULL : mod->xxp[pat_idx];
-		m->scan_cnt[i] = calloc(1, pat && pat->rows ? pat->rows : 1);
-		if (m->scan_cnt[i] == NULL)
-			return -XMP_ERROR_SYSTEM;
+		m->scan_cnt[i] = libxmp_mem_calloc(mem, pat && pat->rows ? pat->rows : 1);
 	}
  
 	return 0;

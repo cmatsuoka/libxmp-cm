@@ -115,18 +115,25 @@ static char *get_basename(char *name)
 */
 #endif /* LIBXMP_CORE_PLAYER */
 
-int xmp_test_module(void *mem, long size, struct xmp_test_info *info)
+int xmp_test_module(void *src, long size, struct xmp_test_info *info)
 {
 	struct libxmp_buffer *buf;
+	struct libxmp_mem *mem;
 	char name[XMP_NAME_SIZE];
 	int i;
-	int ret = -XMP_ERROR_FORMAT;
+	int ret = -XMP_ERROR_SYSTEM;
 
-	if ((buf = libxmp_buffer_new(mem, size)) == NULL) {
-		return -XMP_ERROR_SYSTEM;
+	if ((buf = libxmp_buffer_new(src, size)) == NULL) {
+		goto err;
 	}
 	if (setjmp(buf->jmp) != 0) {
-		return ret;
+		goto err2;
+	}
+	if ((mem = libxmp_mem_new()) == NULL) {
+		goto err2;
+	}
+	if (setjmp(mem->jmp) != 0) {
+		goto err3;
 	}
 
 	if (info != NULL) {
@@ -138,7 +145,7 @@ int xmp_test_module(void *mem, long size, struct xmp_test_info *info)
 
 		libxmp_buffer_seek(buf, 0, SEEK_SET);
 
-		if (format_loader[i]->test(buf, name, 0) == 0) {
+		if (format_loader[i]->test(mem, buf, name, 0) == 0) {
 			int is_prowizard = 0;
 
 /*
@@ -160,14 +167,19 @@ int xmp_test_module(void *mem, long size, struct xmp_test_info *info)
 
 			if (info != NULL && !is_prowizard) {
 				strncpy(info->name, name, XMP_NAME_SIZE - 1);
-				strncpy(info->type, format_loader[i]->name,
-							XMP_NAME_SIZE - 1);
+				strncpy(info->type, format_loader[i]->name, XMP_NAME_SIZE - 1);
 			}
-			return 0;
+
+			ret = 0;
+			break;
 		}
 	}
 
+    err3:
+	libxmp_mem_release(mem);
+    err2:
 	libxmp_buffer_release(buf);
+    err:
 	return ret;
 }
 
@@ -176,6 +188,7 @@ static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
+	struct libxmp_mem *mem = &m->mem;
 	int i, j, ret;
 	int test_result, load_result;
 
@@ -192,7 +205,7 @@ static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
 		}
 
 		D_(D_WARN "test %s", format_loader[i]->name);
-		test_result = format_loader[i]->test(buf, NULL, 0);
+		test_result = format_loader[i]->test(mem, buf, NULL, 0);
 		if (test_result == 0) {
 			libxmp_buffer_seek(buf, 0, SEEK_SET);
 			if (setjmp(buf->jmp)) {
@@ -200,7 +213,7 @@ static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
 				return -XMP_ERROR_LOAD;
 			}
 			D_(D_WARN "load format: %s", format_loader[i]->name);
-			load_result = format_loader[i]->loader(buf, m, 0);
+			load_result = format_loader[i]->loader(mem, buf, m, 0);
 			break;
 		}
 	}
@@ -211,8 +224,6 @@ static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
 #endif
 
 	if (test_result < 0) {
-		free(m->basename);
-		free(m->dirname);
 		return -XMP_ERROR_FORMAT;
 	}
 
@@ -277,7 +288,7 @@ static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
 	return -XMP_ERROR_LOAD;
 }
 
-int xmp_load_module(xmp_context opaque, void *mem, long size)
+int xmp_load_module(xmp_context opaque, void *src, long size)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 #ifndef LIBXMP_CORE_PLAYER
@@ -286,7 +297,7 @@ int xmp_load_module(xmp_context opaque, void *mem, long size)
 	struct libxmp_buffer *buf;
 	int ret;
 
-	if ((buf = libxmp_buffer_new(mem, size)) == NULL) {
+	if ((buf = libxmp_buffer_new(src, size)) == NULL) {
 		return -XMP_ERROR_SYSTEM;
 	}
 		
@@ -366,8 +377,7 @@ void xmp_release_module(xmp_context opaque)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct module_data *m = &ctx->m;
-	struct xmp_module *mod = &m->mod;
-	int i;
+	struct libxmp_mem *mem = &m->mem;
 
 	/* can't test this here, we must call release_module to clean up
 	 * load errors
@@ -375,71 +385,15 @@ void xmp_release_module(xmp_context opaque)
 		return;
 	 */
 
-	if (ctx->state > XMP_STATE_LOADED)
+	if (ctx->state > XMP_STATE_LOADED) {
 		xmp_end_player(opaque);
+	}
 
 	ctx->state = XMP_STATE_UNLOADED;
 
 	D_(D_INFO "Freeing memory");
 
-#ifndef LIBXMP_CORE_PLAYER
-	libxmp_release_module_extras(ctx);
-#endif
-
-	if (mod->xxt != NULL) {
-		for (i = 0; i < mod->trk; i++) {
-			free(mod->xxt[i]);
-		}
-		free(mod->xxt);
-	}
-
-	if (mod->xxp != NULL) {
-		for (i = 0; i < mod->pat; i++) {
-			free(mod->xxp[i]);
-		}
-		free(mod->xxp);
-	}
-
-	if (mod->xxi != NULL) {
-		for (i = 0; i < mod->ins; i++) {
-			free(mod->xxi[i].sub);
-			free(mod->xxi[i].extra);
-		}
-		free(mod->xxi);
-	}
-
-	if (mod->xxs != NULL) {
-		for (i = 0; i < mod->smp; i++) {
-			if (mod->xxs[i].data != NULL) {
-				free(mod->xxs[i].data - 4);
-			}
-		}
-		free(mod->xxs);
-		free(m->xtra);
-	}
-
-#ifndef LIBXMP_CORE_DISABLE_IT
-	if (m->xsmp != NULL) {
-		for (i = 0; i < mod->smp; i++) {
-			if (m->xsmp[i].data != NULL) {
-				free(m->xsmp[i].data - 4);
-			}
-		}
-		free(m->xsmp);
-	}
-#endif
-
-	if (m->scan_cnt) {
-		for (i = 0; i < mod->len; i++)
-			free(m->scan_cnt[i]);
-		free(m->scan_cnt);
-	}
-
-	free(m->comment);
-
-	D_("free dirname/basename");
-	free(m->dirname);
-	free(m->basename);
+	libxmp_mem_clear(mem);
 }
 
 void xmp_scan_module(xmp_context opaque)
