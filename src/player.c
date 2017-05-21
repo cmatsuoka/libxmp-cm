@@ -1475,10 +1475,9 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 	struct flow_control *f = &p->flow;
 	LIBXMP_MEM mem = p->mem;
 	int i;
-	char *err;
 
-	if ((libxmp_mem_catch(mem, &err)) != 0) {
-		D_(D_CRIT "player exception: %s", err);
+	if ((libxmp_mem_catch(mem)) != 0) {
+		D_(D_CRIT "player exception: %s", libxmp_mem_error(mem));
 		return -XMP_ERROR_SYSTEM;
 	}
 

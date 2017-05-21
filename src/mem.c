@@ -29,25 +29,16 @@
 #define uthash_fatal(msg) goto err_uthash
 #include "uthash.h"
 
-#define LIBXMP_MEM_ERRSIZE 80
-#define M(m) ((struct libxmp_mem *)(m))
-
 struct mem_item {
 	void *ptr;
 	UT_hash_handle hh;
 };
 
-struct libxmp_mem {
-	jmp_buf jmp;
-	struct mem_item *hash;
-	char _err[LIBXMP_MEM_ERRSIZE];
-};
-
 LIBXMP_MEM libxmp_mem_new()
 {
-	struct libxmp_mem *m;
+	struct libxmp_mem__ *m;
 
-	if ((m = calloc(sizeof (struct libxmp_mem), 1)) == NULL) {
+	if ((m = calloc(sizeof (struct libxmp_mem__), 1)) == NULL) {
 		return NULL;
 	}
 
@@ -64,29 +55,15 @@ void libxmp_mem_release(LIBXMP_MEM mem)
 	free(mem);
 }
 
-
-int libxmp_mem_catch(LIBXMP_MEM mem, char **msg)
-{
-	int ret;
-
-	if ((ret = setjmp(M(mem)->jmp)) != 0) {
-		if (msg != NULL) {
-			*msg = M(mem)->_err;
-		}
-	}
-
-	return ret;
-}
-
 void libxmp_mem_throw(LIBXMP_MEM mem, int val, char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	vsnprintf(M(mem)->_err, LIBXMP_MEM_ERRSIZE, fmt, ap);
+	vsnprintf(mem->_err, LIBXMP_MEM_ERRSIZE, fmt, ap);
 	va_end(ap);
 
-	longjmp(M(mem)->jmp, val);
+	longjmp(mem->jmp, val);
 }
 
 void *libxmp_mem_calloc(LIBXMP_MEM mem, size_t size)
@@ -101,9 +78,10 @@ void *libxmp_mem_calloc(LIBXMP_MEM mem, size_t size)
 
 void *libxmp_mem_alloc(LIBXMP_MEM mem, size_t size)
 {
+	struct mem_item *head = (struct mem_item *)mem->hash;
 	struct mem_item *item;
 
-	D_(D_INFO "size=%ld (hash=%p)", (long)size, M(mem)->hash);
+	D_(D_INFO "size=%ld (hash=%p)", (long)size, mem->hash);
 
 	if ((item = malloc(sizeof (struct mem_item))) == NULL) {
 		goto err;
@@ -113,7 +91,7 @@ void *libxmp_mem_alloc(LIBXMP_MEM mem, size_t size)
 		goto err2;
 	}
 
-	HASH_ADD_PTR(M(mem)->hash, ptr, item);
+	HASH_ADD_PTR(head, ptr, item);
 
 	D_(D_INFO "ptr=%p", item->ptr);
 
@@ -130,12 +108,13 @@ void *libxmp_mem_alloc(LIBXMP_MEM mem, size_t size)
 
 void libxmp_mem_free(LIBXMP_MEM mem, void *ptr)
 {
+	struct mem_item *head = (struct mem_item *)mem->hash;
 	struct mem_item *item;
 
 	D_(D_INFO "ptr=%p", ptr);
 
-	HASH_FIND_PTR(M(mem)->hash, &ptr, item);
-	HASH_DEL(M(mem)->hash, item);
+	HASH_FIND_PTR(head, &ptr, item);
+	HASH_DEL(head, item);
 
 	free(item->ptr);
 	free(item);
@@ -143,13 +122,14 @@ void libxmp_mem_free(LIBXMP_MEM mem, void *ptr)
 
 void libxmp_mem_clear(LIBXMP_MEM mem)
 {
+	struct mem_item *head = (struct mem_item *)mem->hash;
 	struct mem_item *item, *tmp;
 
-	D_(D_WARN "clear allocations (ptr=%p)", M(mem)->hash);
+	D_(D_WARN "clear allocations (ptr=%p)", mem->hash);
 	
-	HASH_ITER(hh, M(mem)->hash, item, tmp) {
+	HASH_ITER(hh, (struct mem_item *)mem->hash, item, tmp) {
 		D_(D_INFO "free %p (item %p)", item->ptr, item);
-		HASH_DEL(M(mem)->hash, item);
+		HASH_DEL(head, item);
 		free(item->ptr);
 		free(item);
 	}

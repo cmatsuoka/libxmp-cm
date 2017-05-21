@@ -8,11 +8,23 @@
 #define LIBXMP_BUFFER_ERANGE	(-2)
 #define LIBXMP_BUFFER_EPARM	(-3)
 
-typedef struct libxmp_buffer_opaque__{} *LIBXMP_BUFFER;
+#define LIBXMP_BUFFER_ERRSIZE	80
+
+struct libxmp_buffer__ {
+	jmp_buf jmp;
+	uint8 *start;
+	uint8 *pos;
+	uint8 *end;
+	char _err[LIBXMP_BUFFER_ERRSIZE];
+};
+
+typedef struct libxmp_buffer__ *LIBXMP_BUFFER;
+
+#define libxmp_buffer_catch(buf) setjmp((buf)->jmp)
+#define libxmp_buffer_error(buf) ((buf)->_err)
 
 LIBXMP_BUFFER	libxmp_buffer_new	(void *, size_t);
 void		libxmp_buffer_release	(LIBXMP_BUFFER);
-int		libxmp_buffer_catch	(LIBXMP_BUFFER, char **);
 void		libxmp_buffer_throw	(LIBXMP_BUFFER, int, char *, ...);
 int		libxmp_buffer_left	(LIBXMP_BUFFER);
 int		libxmp_buffer_scan	(LIBXMP_BUFFER, char *, ...);

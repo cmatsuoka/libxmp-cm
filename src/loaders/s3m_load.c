@@ -244,11 +244,11 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 
 	LOAD_INIT();
 
-	libxmp_buffer_scan(buf, "s28;w16l;b8;b8;w16l;w16l;w16;w16l;w16l;w16l;d32l;b8;b8;b8;b8;b8;b8;d32l;d32l;w16l;s32",
+	libxmp_buffer_scan(buf, "s28;b8;b8;w16l;w16l;w16l;w16;w16l;w16l;w16l;d32l;b8;b8;b8;b8;b8;b8;d32l;d32l;w16l;s32",
 		&sfh.name,	/* Song name */
-		NULL,
+		NULL,		/* 0x1a */
 		&sfh.type,	/* File type */
-		NULL,
+		NULL,		/* -- */
 		&sfh.ordnum,	/* Number of orders (must be even) */
 		&sfh.insnum,	/* Number of instruments */
 		&sfh.patnum,	/* Number of patterns */
