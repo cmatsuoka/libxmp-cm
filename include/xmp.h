@@ -326,13 +326,13 @@ EXPORT int         xmp_play_buffer     (xmp_module, void *, int, int);
 
 EXPORT void        xmp_get_module_info (xmp_context, struct xmp_module_info *);
 
-EXPORT int         xmp_next_position   (xmp_context);
-EXPORT int         xmp_prev_position   (xmp_context);
-EXPORT int         xmp_set_position    (xmp_context, int);
-EXPORT void        xmp_stop_module     (xmp_context);
-EXPORT void        xmp_restart_module  (xmp_context);
-EXPORT int         xmp_seek_time       (xmp_context, int);
-EXPORT int         xmp_channel_mute    (xmp_context, int, int);
+EXPORT int         xmp_next_position   (xmp_module);
+EXPORT int         xmp_prev_position   (xmp_module);
+EXPORT int         xmp_set_position    (xmp_module, int);
+EXPORT void        xmp_stop_module     (xmp_module);
+EXPORT void        xmp_restart_module  (xmp_module);
+EXPORT int         xmp_seek_time       (xmp_module, int);
+EXPORT int         xmp_channel_mute    (xmp_module, int, int);
 
 
 EXPORT char      **xmp_get_format_list (void);

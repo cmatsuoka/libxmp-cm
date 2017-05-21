@@ -3,6 +3,7 @@
 
 #include "lfo.h"
 
+
 /* Quirk control */
 #define HAS_QUIRK(x)	(m->quirk & (x))
 
