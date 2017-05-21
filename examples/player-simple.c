@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <xmp.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "sound.h"
 
 static void display_data(struct xmp_module_info *mi, struct xmp_frame_info *fi)
@@ -29,7 +33,28 @@ int main(int argc, char **argv)
 	ctx = xmp_create_context();
 
 	for (i = 1; i < argc; i++) {
-		if (xmp_load_module(ctx, argv[i]) < 0) {
+		int fd;
+		void *addr;
+		struct stat st;
+
+		/* mmap mod file */
+		if ((fd = open(argv[i], O_RDONLY)) < 0) {
+			fprintf(stderr, "%s: can't open file\n", argv[0]);
+			exit(1);
+		}
+
+		if (fstat(fd, &st) < 0) {
+			fprintf(stderr, "%s: can't stat file\n", argv[0]);
+			exit(1);
+		}
+
+		addr = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+		if (addr == MAP_FAILED) {
+			fprintf(stderr, "%s: can't mmap file\n", argv[0]);
+			exit(1);
+		}
+
+		if (xmp_load_module(ctx, addr, st.st_size) < 0) {
 			fprintf(stderr, "%s: error loading %s\n", argv[0],
 				argv[i]);
 			continue;

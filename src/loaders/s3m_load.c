@@ -244,7 +244,7 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 
 	LOAD_INIT();
 
-	libxmp_buffer_scan(buf, "s28;b8;b8;w16l;w16l;w16l;w16;w16l;w16l;w16l;d32l;b8;b8;b8;b8;b8;b8;d32l;d32l;w16l;s32",
+	libxmp_buffer_scan(buf, "s28;b8;b8;w16l;w16l;w16l;w16l;w16l;w16l;w16l;d32b;b8;b8;b8;b8;b8;b8;d32l;d32l;w16l;s32",
 		&sfh.name,	/* Song name */
 		NULL,		/* 0x1a */
 		&sfh.type,	/* File type */
@@ -268,12 +268,15 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 
 	/* Sanity check */
 	if (sfh.ffi != 1 && sfh.ffi != 2) {
+		D_(D_CRIT "sanity check: ffi=%d", sfh.ffi);
 		return -1;
 	}
 	if (sfh.ordnum > 255 || sfh.insnum > 255 || sfh.patnum > 255) {
+		D_(D_CRIT "sanity check: ordnum=%d insnum=%d patnum=%d", sfh.ordnum, sfh.insnum, sfh.patnum);
 		return -1;
 	}
 	if (sfh.magic != MAGIC_SCRM) {
+		D_(D_CRIT "sanity check: magic=%08x", sfh.magic);
 		return -1;
 	}
 
@@ -513,7 +516,7 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 #ifndef LIBXMP_CORE_PLAYER
 			/* OPL2 FM instrument */
 
-			libxmp_buffer_scan(buf, "s12;b8;s12;b8;b8;w16l;s28;d32l",
+			libxmp_buffer_scan(buf, "s12;b8;s12;b8;b8;w16l;s28;d32b",
 				&sah.dosname,		/* DOS file name */
 				NULL,
 				&sah.reg,		/* Adlib registers */
@@ -548,9 +551,9 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 #endif
 		}
 
-		libxmp_buffer_scan(buf, "s12;b8;w16l;d32l;d32;d32;b8;b8;b8;b8;w16l;s28;d32l",
+		libxmp_buffer_scan(buf, "s12;b8;w16l;d32l;d32l;d32l;b8;b8;b8;b8;w16l;w16l;d32l;w16l;w16l;d32l;s28;d32b",
 			&sih.dosname,		/* DOS file name */
-			NULL,
+			NULL,			/* 0x1a */
 			&sih.memseg,		/* Pointer to sample data */
 			&sih.length,		/* Length */
 			&sih.loopbeg,		/* Loop begin */
@@ -559,7 +562,8 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 			NULL,
 			&sih.pack,		/* Packing type (not used) */
 			&sih.flags,		/* Loop/stereo/16bit flags */
-			&sih.c2spd,		/* C4 speed */
+			&sih.c2spd, NULL,	/* C4 speed */
+			NULL, NULL, NULL, NULL,
 			&sih.name,		/* Instrument name */
 			&sih.magic);		/* 'SCRS' */
 
@@ -570,12 +574,12 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 #endif
 
 		if (sih.length > MAX_SAMPLE_SIZE) {
+			D_(D_CRIT "error: length: %d", sih.length);
 			return -1;
 		}
 
-
 		if (x == 1 && sih.magic != MAGIC_SCRS) {
-			D_(D_CRIT "error: instrument magic");
+			D_(D_CRIT "error: instrument magic: %08x", sih.magic);
 			return -1;
 		}
 #ifndef LIBXMP_CORE_PLAYER

@@ -3,9 +3,9 @@ CC = gcc
 CFLAGS = -O3 -Wall -I../include
 LD = gcc
 LDFLAGS =
-LIBS = -lxmp
+LIBS = -L../lib -lxmp
 
-all: examples
+all: player-simple
 
 examples: player-simple player-showpatterns showinfo player-getbuffer player-openal player-openal-buffer
 
