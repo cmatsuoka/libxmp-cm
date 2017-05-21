@@ -348,7 +348,7 @@ TEST_PATH	= .
 SRC_PATH	= ../src
 
 TEST_INTERNAL	= load_helpers.o loaders/itsex.o dataio.o scan.o buffer.o mem.o \
-		  loaders/sample.o loaders/common.o period.o memio.o
+		  loaders/sample.o loaders/common.o period.o
 
 T_OBJS 		= $(addprefix $(TEST_PATH)/,$(TEST_OBJS)) \
 		  $(addprefix $(SRC_PATH)/,$(TEST_INTERNAL))
