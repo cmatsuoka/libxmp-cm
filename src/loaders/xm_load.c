@@ -87,9 +87,7 @@ static int load_xm_pattern(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data
 		r = 0x100;
 	}
 
-	if (libxmp_alloc_pattern_tracks(mem, mod, num, r) < 0) {
-		return -1;
-	}
+	libxmp_alloc_pattern_tracks(mem, mod, num, r);
 
 	if (xph.datasize == 0) {
 		return 0;
@@ -306,15 +304,10 @@ static int load_patterns(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *
 	{
 		int t = i * mod->chn;
 
-		if (libxmp_alloc_pattern(mem, mod, i) < 0) {
-			return -1;
-		}
-
+		libxmp_alloc_pattern(mem, mod, i);
 		mod->xxp[i]->rows = 64;
 
-		if (libxmp_alloc_track(mem, mod, t, 64) < 0) {
-			return -1;
-		}
+		libxmp_alloc_track(mem, mod, t, 64);
 
 		for (j = 0; j < mod->chn; j++) {
 			mod->xxp[i]->index[j] = t;

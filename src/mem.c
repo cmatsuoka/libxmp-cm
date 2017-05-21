@@ -65,18 +65,20 @@ void libxmp_mem_release(LIBXMP_MEM mem)
 }
 
 
-char *libxmp_mem_catch(LIBXMP_MEM mem)
+int libxmp_mem_catch(LIBXMP_MEM mem, char **msg)
 {
 	int ret;
 
-	if ((ret = setjmp(M(mem)->jmp)) == 0) {
-		return NULL;
-	} else {
-		return M(mem)->_err;
+	if ((ret = setjmp(M(mem)->jmp)) != 0) {
+		if (msg != NULL) {
+			*msg = M(mem)->_err;
+		}
 	}
+
+	return ret;
 }
 
-static void exception_throw(LIBXMP_MEM mem, char *fmt, ...)
+void libxmp_mem_throw(LIBXMP_MEM mem, int val, char *fmt, ...)
 {
 	va_list ap;
 
@@ -84,7 +86,7 @@ static void exception_throw(LIBXMP_MEM mem, char *fmt, ...)
 	vsnprintf(M(mem)->_err, LIBXMP_MEM_ERRSIZE, fmt, ap);
 	va_end(ap);
 
-	longjmp(M(mem)->jmp, -1);
+	longjmp(M(mem)->jmp, val);
 }
 
 void *libxmp_mem_calloc(LIBXMP_MEM mem, size_t size)
@@ -121,7 +123,8 @@ void *libxmp_mem_alloc(LIBXMP_MEM mem, size_t size)
     err2:
 	free(item);
     err:
-	exception_throw(mem, "%s:%d: memory allocation error (size %ld)", __FUNCTION__, __LINE__, (long)size);
+	libxmp_mem_throw(mem, LIBXMP_MEM_ENOMEM, "%s:%d: memory allocation error (size %ld)",
+		__FUNCTION__, __LINE__, (long)size);
 	return NULL;
 }
 

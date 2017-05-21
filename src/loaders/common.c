@@ -69,32 +69,28 @@ void libxmp_init_pattern(LIBXMP_MEM mem, struct xmp_module *mod)
 	mod->xxp = libxmp_mem_calloc(mem, sizeof (struct xmp_pattern *) * mod->pat);
 }
 
-int libxmp_alloc_pattern(LIBXMP_MEM mem, struct xmp_module *mod, int num)
+void libxmp_alloc_pattern(LIBXMP_MEM mem, struct xmp_module *mod, int num)
 {
 	/* Sanity check */
 	if (num < 0 || num >= mod->pat || mod->xxp[num] != NULL) {
-		return -1;
+		libxmp_mem_throw(mem, LIBXMP_MEM_EPARAM, "pattern %d: invalid allocation parameters", num);
 	}
 
 	mod->xxp[num] = libxmp_mem_calloc(mem, sizeof (struct xmp_pattern) + sizeof (int) * (mod->chn - 1));
-
-	return 0;
 }
 
-int libxmp_alloc_track(LIBXMP_MEM mem, struct xmp_module *mod, int num, int rows)
+void libxmp_alloc_track(LIBXMP_MEM mem, struct xmp_module *mod, int num, int rows)
 {
 	/* Sanity check */
 	if (num < 0 || num >= mod->trk || mod->xxt[num] != NULL || rows <= 0) {
-		return -1;
+		libxmp_mem_throw(mem, LIBXMP_MEM_EPARAM, "track %d: invalid allocation parameters", num);
 	}
 
 	mod->xxt[num] = libxmp_mem_calloc(mem, sizeof (struct xmp_track) + sizeof (struct xmp_event) * (rows - 1));
 	mod->xxt[num]->rows = rows;
-
-	return 0;
 }
 
-int libxmp_alloc_tracks_in_pattern(LIBXMP_MEM mem, struct xmp_module *mod, int num)
+void libxmp_alloc_tracks_in_pattern(LIBXMP_MEM mem, struct xmp_module *mod, int num)
 {
 	int i;
 
@@ -103,34 +99,21 @@ int libxmp_alloc_tracks_in_pattern(LIBXMP_MEM mem, struct xmp_module *mod, int n
 		int t = num * mod->chn + i;
 		int rows = mod->xxp[num]->rows;
 
-		if (libxmp_alloc_track(mem, mod, t, rows) < 0) {
-			return -1;
-		}
-
+		libxmp_alloc_track(mem, mod, t, rows);
 		mod->xxp[num]->index[i] = t;
 	}
-
-	return 0;
 }
 
-int libxmp_alloc_pattern_tracks(LIBXMP_MEM mem, struct xmp_module *mod, int num, int rows)
+void libxmp_alloc_pattern_tracks(LIBXMP_MEM mem, struct xmp_module *mod, int num, int rows)
 {
 	/* Sanity check */
 	if (rows < 0 || rows > 256) {
-		return -1;
+		libxmp_mem_throw(mem, LIBXMP_MEM_EPARAM, "pattern %d tracks: can't allocate %d rows", num, rows);
 	}
 
-	if (libxmp_alloc_pattern(mem, mod, num) < 0) {
-		return -1;
-	}
-
+	libxmp_alloc_pattern(mem, mod, num);
 	mod->xxp[num]->rows = rows;
-
-	if (libxmp_alloc_tracks_in_pattern(mem, mod, num) < 0) {
-		return -1;
-	}
-
-	return 0;
+	libxmp_alloc_tracks_in_pattern(mem, mod, num);
 }
 
 /* Sample number adjustment by Vitamin/CAIG */

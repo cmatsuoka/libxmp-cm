@@ -62,18 +62,20 @@ void libxmp_buffer_release(LIBXMP_BUFFER buf)
 	free(buf);
 }
 
-char *libxmp_buffer_catch(LIBXMP_BUFFER buf)
+int libxmp_buffer_catch(LIBXMP_BUFFER buf, char **msg)
 {
 	int ret;
 
-	if ((ret = setjmp(B(buf)->jmp)) == 0) {
-		return NULL;
-	} else {
-		return B(buf)->_err;
+	if ((ret = setjmp(B(buf)->jmp)) != 0) {
+		if (msg != NULL) {
+			*msg = B(buf)->_err;
+		}
 	}
+
+	return ret;
 }
 
-static void exception_throw(LIBXMP_BUFFER buf, char *fmt, ...)
+void libxmp_buffer_throw(LIBXMP_BUFFER buf, int val, char *fmt, ...)
 {
 	va_list ap;
 
@@ -81,7 +83,7 @@ static void exception_throw(LIBXMP_BUFFER buf, char *fmt, ...)
 	vsnprintf(B(buf)->_err, LIBXMP_BUFFER_ERRSIZE, fmt, ap);
 	va_end(ap);
 
-	longjmp(B(buf)->jmp, -1);
+	longjmp(B(buf)->jmp, val);
 }
 
 #define ASSIGN_ENDIAN(buf,T,fmt,f) do {					\
@@ -95,7 +97,8 @@ static void exception_throw(LIBXMP_BUFFER buf, char *fmt, ...)
 		} else if (e == 'b') {					\
 			*b = (T)libxmp_buffer_read##f##b(buf);		\
 		} else {						\
-			exception_throw((buf), "%s:%d: invalid endian: %c\n", __FUNCTION__, __LINE__, e);	\
+			libxmp_buffer_throw((buf), LIBXMP_BUFFER_EINVAL,\
+				"%s:%d: invalid endian: %c\n", __FUNCTION__, __LINE__, e);	\
 		}							\
 	}								\
 } while (0)
@@ -178,7 +181,7 @@ void libxmp_buffer_read(LIBXMP_BUFFER buf, void *dst, int size)
 {
 	/* check range */
 	if (B(buf)->pos + size >= B(buf)->end) {
-		exception_throw(buf, "%s:%d: invalid read (size %ld)", size);
+		libxmp_buffer_throw(buf, LIBXMP_BUFFER_ERANGE, "%s:%d: invalid read (size %ld)", size);
 	}
 
 	memcpy(dst, B(buf)->pos, size);
@@ -202,7 +205,8 @@ int libxmp_buffer_try_read(LIBXMP_BUFFER buf, void *dst, int size)
 
 #define CHECK_RANGE(b,x) do {					\
 	if ((x) >= B(b)->end || (x) < B(b)->start) {		\
-		exception_throw((b), "%s:%d: invalid offset %ld (size %ld)", \
+		libxmp_buffer_throw((b), LIBXMP_BUFFER_ERANGE,	\
+			"%s:%d: invalid offset %ld (size %ld)", \
 			__FUNCTION__, __LINE__, (x)-B(b)->start, B(b)->end-B(b)->start);	\
 	}							\
 	B(b)->pos = (x);						\
@@ -221,7 +225,7 @@ void libxmp_buffer_seek(LIBXMP_BUFFER buf, long offset, int whence)
 		CHECK_RANGE(buf, B(buf)->end - offset - 1);
 		break;
 	default:
-		exception_throw(buf, "buffer seek: invalid seek whence %d", whence);
+		libxmp_buffer_throw(buf, LIBXMP_BUFFER_EINVAL, "buffer seek: invalid seek whence %d", whence);
 	}
 }
 
@@ -238,7 +242,8 @@ long libxmp_buffer_size(LIBXMP_BUFFER buf)
 
 #define CHECK_SIZE(b,x) do {					\
 	if (B(b)->pos + (x) >= B(b)->end) {			\
-		exception_throw((b), "%s:%d: invalid position %ld (size %ld)", \
+		libxmp_buffer_throw((b), LIBXMP_BUFFER_ERANGE,	\
+			"%s:%d: invalid position %ld (size %ld)", \
 			__FUNCTION__, __LINE__, B(b)->pos-B(b)->start, B(b)->end-B(b)->start);	\
 	}							\
 } while (0)

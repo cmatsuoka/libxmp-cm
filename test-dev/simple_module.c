@@ -10,7 +10,7 @@ void create_simple_module(struct context_data *ctx, int ins, int pat)
 {
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
-	LIBXMP_MEM mem = &m->mem;
+	LIBXMP_MEM mem = m->mem;
 	int i;
 
 	libxmp_load_prologue(ctx);

@@ -313,8 +313,9 @@ int libxmp_prepare_scan(struct context_data *ctx)
 	LIBXMP_MEM mem = m->mem;
 	int i, ord;
 
-	if (mod->xxp == NULL || mod->xxt == NULL)
+	if (mod->xxp == NULL || mod->xxt == NULL) {
 		return -XMP_ERROR_LOAD;
+	}
 	ord = 0;
 	while (ord < mod->len && mod->xxo[ord] >= mod->pat) {
 		ord++;
@@ -333,9 +334,7 @@ int libxmp_prepare_scan(struct context_data *ctx)
 
 		/* Add pattern if referenced in orders */
 		if (pat_idx < mod->pat && !mod->xxp[pat_idx]) {
-			if (libxmp_alloc_pattern(mem, mod, pat_idx) < 0) {
-				return -XMP_ERROR_SYSTEM;
-			}
+			libxmp_alloc_pattern(mem, mod, pat_idx);
 		}
 
 		pat = pat_idx >= mod->pat ? NULL : mod->xxp[pat_idx];

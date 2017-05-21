@@ -432,11 +432,11 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 	D_(D_INFO "Stored patterns: %d", mod->pat);
 
 	for (i = 0; i < mod->pat; i++) {
-		if (libxmp_alloc_pattern_tracks(mem, mod, i, 64) < 0)
-			return -1;
+		libxmp_alloc_pattern_tracks(mem, mod, i, 64);
 
-		if (pp_pat[i] == 0)
+		if (pp_pat[i] == 0) {
 			continue;
+		}
 
 		libxmp_buffer_seek(buf, start + pp_pat[i] * 16, SEEK_SET);
 		r = 0;

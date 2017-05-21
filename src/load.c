@@ -130,15 +130,16 @@ int xmp_test_module(void *src, long size, struct xmp_test_info *info)
 	if ((buf = libxmp_buffer_new(src, size)) == NULL) {
 		goto err;
 	}
-	if ((err = libxmp_buffer_catch(buf)) != NULL) {
+	if ((ret = libxmp_buffer_catch(buf, &err))) {
 		D_(D_CRIT "%s", err);
 		goto err2;
 	}
 	if ((mem = libxmp_mem_new()) == NULL) {
 		goto err2;
 	}
-	if ((err = libxmp_mem_catch(mem)) != NULL) {
+	if (libxmp_mem_catch(mem, &err) != 0) {
 		D_(D_CRIT "%s", err);
+		ret = -XMP_ERROR_SYSTEM;
 		goto err3;
 	}
 
@@ -205,7 +206,7 @@ static int load_module(xmp_context opaque, LIBXMP_BUFFER buf)
 	for (i = 0; format_loader[i] != NULL; i++) {
 		libxmp_buffer_seek(buf, 0, SEEK_SET);
 
-		if (libxmp_buffer_catch(buf) != NULL) {
+		if (libxmp_buffer_catch(buf, NULL) != 0) {
 			/* Go to next format if access fault testing file */
 			continue;
 		}
@@ -216,9 +217,29 @@ static int load_module(xmp_context opaque, LIBXMP_BUFFER buf)
 			char *err;
 
 			libxmp_buffer_seek(buf, 0, SEEK_SET);
-			if ((err = libxmp_buffer_catch(buf)) != NULL) {
+			if ((ret = libxmp_buffer_catch(buf, &err))) {
 				D_(D_CRIT "exception loading module: %s", err);
-				return -XMP_ERROR_LOAD;
+				switch (ret) {
+				case LIBXMP_BUFFER_EINVAL:
+					ret = -XMP_ERROR_SYSTEM;
+					break;
+				default:
+					ret = -XMP_ERROR_LOAD;
+					break;
+				}
+				return ret;
+			}
+			if ((ret = libxmp_mem_catch(mem, &err))) {
+				D_(D_CRIT "exception loading module: %s", err);
+				switch (ret) {
+				case LIBXMP_MEM_ENOMEM:
+					ret = -XMP_ERROR_SYSTEM;
+					break;
+				default:
+					ret = -XMP_ERROR_LOAD;
+					break;
+				}
+				return ret;
 			}
 			D_(D_WARN "load format: %s", format_loader[i]->name);
 			load_result = format_loader[i]->loader(mem, buf, m, 0);

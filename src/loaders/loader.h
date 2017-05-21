@@ -29,10 +29,10 @@
 void	libxmp_init_instrument		(LIBXMP_MEM , struct module_data *);
 void	libxmp_alloc_subinstrument	(LIBXMP_MEM , struct xmp_module *, int, int);
 void	libxmp_init_pattern		(LIBXMP_MEM , struct xmp_module *);
-int	libxmp_alloc_pattern		(LIBXMP_MEM , struct xmp_module *, int);
-int	libxmp_alloc_track		(LIBXMP_MEM , struct xmp_module *, int, int);
-int	libxmp_alloc_tracks_in_pattern	(LIBXMP_MEM , struct xmp_module *, int);
-int	libxmp_alloc_pattern_tracks	(LIBXMP_MEM , struct xmp_module *, int, int);
+void	libxmp_alloc_pattern		(LIBXMP_MEM , struct xmp_module *, int);
+void	libxmp_alloc_track		(LIBXMP_MEM , struct xmp_module *, int, int);
+void	libxmp_alloc_tracks_in_pattern	(LIBXMP_MEM , struct xmp_module *, int);
+void	libxmp_alloc_pattern_tracks	(LIBXMP_MEM , struct xmp_module *, int, int);
 char	*libxmp_instrument_name		(struct xmp_module *, int, uint8 *, int);
 struct xmp_sample* libxmp_realloc_samples(struct xmp_sample *, int *, int);
 
