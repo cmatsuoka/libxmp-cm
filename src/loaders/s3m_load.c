@@ -79,8 +79,8 @@
 #define MAGIC_SCRI	MAGIC4('S','C','R','I')
 #define MAGIC_SCRS	MAGIC4('S','C','R','S')
 
-static int s3m_test(HIO_HANDLE *, char *, const int);
-static int s3m_load(struct module_data *, HIO_HANDLE *, const int);
+static int s3m_test(struct libxmp_mem *, struct libxmp_buffer *, char *, const int);
+static int s3m_load(struct libxmp_mem *, struct libxmp_buffer *, struct module_data *, const int);
 
 const struct format_loader libxmp_loader_s3m = {
 	"Scream Tracker 3",
@@ -88,18 +88,20 @@ const struct format_loader libxmp_loader_s3m = {
 	s3m_load
 };
 
-static int s3m_test(HIO_HANDLE *f, char *t, const int start)
+static int s3m_test(struct libxmp_mem *mem, struct libxmp_buffer *buf, char *t, const int start)
 {
-	hio_seek(f, start + 44, SEEK_SET);
-	if (hio_read32b(f) != MAGIC_SCRM)
+	libxmp_buffer_seek(buf, start + 44, SEEK_SET);
+	if (libxmp_buffer_read32b(buf) != MAGIC_SCRM) {
 		return -1;
+	}
 
-	hio_seek(f, start + 29, SEEK_SET);
-	if (hio_read8(f) != 0x10)
+	libxmp_buffer_seek(buf, start + 29, SEEK_SET);
+	if (libxmp_buffer_read8(buf) != 0x10) {
 		return -1;
+	}
 
-	hio_seek(f, start + 0, SEEK_SET);
-	libxmp_read_title(f, t, 28);
+	libxmp_buffer_seek(buf, start + 0, SEEK_SET);
+	libxmp_read_title(buf, t, 28);
 
 	return 0;
 }
@@ -222,7 +224,7 @@ static void xlat_fx(int c, struct xmp_event *e)
 	}
 }
 
-static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
+static int s3m_load(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct module_data *m, const int start)
 {
 	struct xmp_module *mod = &m->mod;
 	int c, r, i;
@@ -239,44 +241,40 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 	uint16 *pp_ins;			/* Parapointers to instruments */
 	uint16 *pp_pat;			/* Parapointers to patterns */
 	int ret;
-	uint8 buf[96]
 
 	LOAD_INIT();
 
-	if (hio_read(buf, 1, 96, f) != 96) {
-		goto err;
-	}
-
-	memcpy(&sfh.name, buf, 28);		/* Song name */
-	sfh.type = buf[30];			/* File type */
-	sfh.ordnum = readmem16l(buf + 32);	/* Number of orders (must be even) */
-	sfh.insnum = readmem16l(buf + 34);	/* Number of instruments */
-	sfh.patnum = readmem16l(buf + 36);	/* Number of patterns */
-	sfh.flags = readmem16l(buf + 38);	/* Flags */
-	sfh.version = readmem16l(buf + 40);	/* Tracker ID and version */
-	sfh.ffi = readmem16l(buf + 42);		/* File format information */
+	libxmp_buffer_scan(buf, "s28;w16l;b8;b8;w16l;w16l;w16;w16l;w16l;w16l;d32l;b8;b8;b8;b8;b8;b8;d32l;d32l;w16l;s32",
+		&sfh.name,	/* Song name */
+		NULL,
+		&sfh.type,	/* File type */
+		NULL,
+		&sfh.ordnum,	/* Number of orders (must be even) */
+		&sfh.insnum,	/* Number of instruments */
+		&sfh.patnum,	/* Number of patterns */
+		&sfh.flags,	/* Flags */
+		&sfh.version,	/* Tracker ID and version */
+		&sfh.ffi,	/* File format information */
+		&sfh.magic,	/* 'SCRM' */
+		&sfh.gv,	/* Global volume */
+		&sfh.is,	/* Initial speed */
+		&sfh.it,	/* Initial tempo */
+		&sfh.mv,	/* Master volume */
+		&sfh.uc,	/* Ultra click removal */
+		&sfh.dp,	/* Default pan positions if 0xfc */
+		NULL, NULL,	/* 54-61 reserved */
+		&sfh.special,	/* Ptr to special custom data */
+		&sfh.chset);	/* Channel settings */
 
 	/* Sanity check */
 	if (sfh.ffi != 1 && sfh.ffi != 2) {
-		goto err;
+		return -1;
 	}
 	if (sfh.ordnum > 255 || sfh.insnum > 255 || sfh.patnum > 255) {
-		goto err;
+		return -1;
 	}
-
-	sfh.magic = readmem32b(buf + 44);	/* 'SCRM' */
-	sfh.gv = buf[48];			/* Global volume */
-	sfh.is = buf[49];			/* Initial speed */
-	sfh.it = buf[50];			/* Initial tempo */
-	sfh.mv = buf[51];			/* Master volume */
-	sfh.uc = buf[52];			/* Ultra click removal */
-	sfh.dp = buf[53];			/* Default pan positions if 0xfc */
-	/* 54-61 reserved */
-	sfh.special = readmem16l(buf + 62);	/* Ptr to special custom data */
-	memcpy(sfh.chset, buf + 64, 32);	/* Channel settings */
-
 	if (sfh.magic != MAGIC_SCRM) {
-		goto err;
+		return -1;
 	}
 
 #ifndef LIBXMP_CORE_PLAYER
@@ -293,15 +291,8 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 
 	libxmp_copy_adjust(mod->name, sfh.name, 28);
 
-	pp_ins = calloc(2, sfh.insnum);
-	if (pp_ins == NULL) {
-		goto err;
-	}
-
-	pp_pat = calloc(2, sfh.patnum);
-	if (pp_pat == NULL) {
-		goto err2;
-	}
+	pp_ins = libxmp_mem_calloc(mem, 2 * sfh.insnum);
+	pp_pat = libxmp_mem_calloc(mem, 2 * sfh.patnum);
 
 	if (sfh.flags & S3M_AMIGA_RANGE) {
 		m->period_type = PERIOD_MODRNG;
@@ -315,8 +306,9 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 	mod->chn = 0;
 
 	for (i = 0; i < 32; i++) {
-		if (sfh.chset[i] == S3M_CH_OFF)
+		if (sfh.chset[i] == S3M_CH_OFF) {
 			continue;
+		}
 
 		mod->chn = i + 1;
 
@@ -330,17 +322,15 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 
 	if (sfh.ordnum <= XMP_MAX_MOD_LENGTH) {
 		mod->len = sfh.ordnum;
-		if (hio_read(mod->xxo, 1, mod->len, f) != mod->len) {
-			goto err3;
+		if (libxmp_buffer_read(buf, mod->xxo, mod->len) != mod->len) {
+			return -1;
 		}
 	} else {
 		mod->len = XMP_MAX_MOD_LENGTH;
-		if (hio_read(mod->xxo, 1, mod->len, f) != mod->len) {
-			goto err3;
+		if (libxmp_buffer_read(buf, mod->xxo, mod->len) != mod->len) {
+			return -1;
 		}
-		if (hio_seek(f, sfh.ordnum - XMP_MAX_MOD_LENGTH, SEEK_CUR) < 0) {
-			goto err3;
-		}
+		libxmp_buffer_seek(buf, sfh.ordnum - XMP_MAX_MOD_LENGTH, SEEK_CUR);
 	}
 
 	/* Don't trust sfh.patnum */
@@ -355,7 +345,7 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 		mod->pat = sfh.patnum;
 	}
 	if (mod->pat == 0) {
-		goto err3;
+		return -1;
 	}
 
 	mod->trk = mod->pat * mod->chn;
@@ -364,22 +354,21 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 	mod->smp = mod->ins;
 
 	for (i = 0; i < sfh.insnum; i++) {
-		pp_ins[i] = hio_read16l(f);
+		pp_ins[i] = libxmp_buffer_read16l(buf);
 	}
 
 	for (i = 0; i < sfh.patnum; i++) {
-		pp_pat[i] = hio_read16l(f);
+		pp_pat[i] = libxmp_buffer_read16l(buf);
 	}
 
 	/* Default pan positions */
 
 	for (i = 0, sfh.dp -= 0xfc; !sfh.dp /* && n */  && (i < 32); i++) {
-		uint8 x = hio_read8(f);
+		uint8 x = libxmp_buffer_read8(buf);
 		if (x & S3M_PAN_SET) {
 			mod->xxc[i].pan = (x << 4) & 0xff;
 		} else {
-			mod->xxc[i].pan =
-			    sfh.mv % 0x80 ? 0x30 + 0xa0 * (i & 1) : 0x80;
+			mod->xxc[i].pan = sfh.mv % 0x80 ? 0x30 + 0xa0 * (i & 1) : 0x80;
 		}
 	}
 
@@ -440,30 +429,25 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 
 	MODULE_INFO();
 
-	if (libxmp_init_pattern(mod) < 0)
-		goto err3;
+	libxmp_init_pattern(mem, mod);
 
 	/* Read patterns */
 
 	D_(D_INFO "Stored patterns: %d", mod->pat);
 
 	for (i = 0; i < mod->pat; i++) {
-		if (libxmp_alloc_pattern_tracks(mod, i, 64) < 0)
-			goto err3;
+		if (libxmp_alloc_pattern_tracks(mem, mod, i, 64) < 0)
+			return -1;
 
 		if (pp_pat[i] == 0)
 			continue;
 
-		hio_seek(f, start + pp_pat[i] * 16, SEEK_SET);
+		libxmp_buffer_seek(buf, start + pp_pat[i] * 16, SEEK_SET);
 		r = 0;
-		pat_len = hio_read16l(f) - 2;
+		pat_len = libxmp_buffer_read16l(buf) - 2;
 
 		while (pat_len >= 0 && r < mod->xxp[i]->rows) {
-			b = hio_read8(f);
-
-			if (hio_error(f)) {
-				goto err3;
-			}
+			b = libxmp_buffer_read8(buf);
 
 			if (b == S3M_EOR) {
 				r++;
@@ -474,7 +458,7 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 			event = c >= mod->chn ? &dummy : &EVENT(i, c, r);
 
 			if (b & S3M_NI_FOLLOW) {
-				switch (n = hio_read8(f)) {
+				switch (n = libxmp_buffer_read8(buf)) {
 				case 255:
 					n = 0;
 					break;	/* Empty note */
@@ -485,18 +469,18 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 					n = 13 + 12 * MSN(n) + LSN(n);
 				}
 				event->note = n;
-				event->ins = hio_read8(f);
+				event->ins = libxmp_buffer_read8(buf);
 				pat_len -= 2;
 			}
 
 			if (b & S3M_VOL_FOLLOWS) {
-				event->vol = hio_read8(f) + 1;
+				event->vol = libxmp_buffer_read8(buf) + 1;
 				pat_len--;
 			}
 
 			if (b & S3M_FX_FOLLOWS) {
-				event->fxt = hio_read8(f);
-				event->fxp = hio_read8(f);
+				event->fxt = libxmp_buffer_read8(buf);
+				event->fxp = libxmp_buffer_read8(buf);
 				xlat_fx(c, event);
 
 				pat_len -= 2;
@@ -507,8 +491,7 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 	D_(D_INFO "Stereo enabled: %s", sfh.mv & 0x80 ? "yes" : "no");
 	D_(D_INFO "Pan settings: %s", sfh.dp ? "no" : "yes");
 
-	if (libxmp_init_instrument(m) < 0)
-		goto err3;
+	libxmp_init_instrument(mem, m);
 
 	/* Read and convert instruments and samples */
 
@@ -518,37 +501,35 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 		struct xmp_instrument *xxi = &mod->xxi[i];
 		struct xmp_sample *xxs = &mod->xxs[i];
 		struct xmp_subinstrument *sub;
+		uint8 x;
 
-		xxi->sub = calloc(sizeof(struct xmp_subinstrument), 1);
-		if (xxi->sub == NULL) {
-			goto err3;
-		}
+		xxi->sub = libxmp_mem_calloc(mem, sizeof(struct xmp_subinstrument));
 
 		sub = &xxi->sub[0];
 
-		hio_seek(f, start + pp_ins[i] * 16, SEEK_SET);
+		libxmp_buffer_seek(buf, start + pp_ins[i] * 16, SEEK_SET);
 		sub->pan = 0x80;
 		sub->sid = i;
 
-		if (hio_read(buf, 1, 80, f) != 80) {
-			goto err3;
-		}
+		x = libxmp_buffer_read8(buf);
 
-		if (buf[0] >= 2) {
+		if (x >= 2) {
 #ifndef LIBXMP_CORE_PLAYER
 			/* OPL2 FM instrument */
 
-			memcpy(sah.dosname, buf + 1, 12);	/* DOS file name */
-			memcpy(sah.reg, buf + 16, 12);		/* Adlib registers */
-			sah.vol = buf[28];
-			sah.dsk = buf[29];
-			sah.c2spd = readmem16l(buf + 32);	/* C4 speed */
-			memcpy(sah.name, buf + 48, 28);		/* Instrument name */
-			sah.magic = readmem32b(buf + 76);		/* 'SCRI' */
+			libxmp_buffer_scan(buf, "s12;b8;s12;b8;b8;w16l;s28;d32l",
+				&sah.dosname,		/* DOS file name */
+				NULL,
+				&sah.reg,		/* Adlib registers */
+				&sah.vol,
+				&sah.dsk,
+				&sah.c2spd,		/* C4 speed */
+				&sah.name,		/* Instrument name */
+				&sah.magic);		/* 'SCRI' */
 
 			if (sah.magic != MAGIC_SCRI) {
 				D_(D_CRIT "error: FM instrument magic");
-				goto err3;
+				return -1;
 			}
 			sah.magic = 0;
 
@@ -558,23 +539,33 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 			sub->vol = sah.vol;
 			libxmp_c2spd_to_note(sah.c2spd, &sub->xpo, &sub->fin);
 			sub->xpo += 12;
-			ret =
-			    libxmp_load_sample(m, f, SAMPLE_FLAG_ADLIB, xxs,
-					(char *)&sah.reg);
-			if (ret < 0)
-				goto err3;
+			ret = libxmp_load_sample(buf, m, SAMPLE_FLAG_ADLIB, xxs, (char *)&sah.reg);
+			if (ret < 0) {
+				return -1;
+			}
 
 			D_(D_INFO "[%2X] %-28.28s", i, xxi->name);
 
 			continue;
 #else
-			goto err3;
+			return -1;
 #endif
 		}
 
-		memcpy(sih.dosname, buf + 1, 13);	/* DOS file name */
-		sih.memseg = readmem16l(buf + 14);	/* Pointer to sample data */
-		sih.length = readmem32l(buf + 16);	/* Length */
+		libxmp_buffer_scan(buf, "s12;b8;w16l;d32l;d32;d32;b8;b8;b8;b8;w16l;s28;d32l",
+			&sih.dosname,		/* DOS file name */
+			NULL,
+			&sih.memseg,		/* Pointer to sample data */
+			&sih.length,		/* Length */
+			&sih.loopbeg,		/* Loop begin */
+			&sih.loopend,		/* Loop end */
+			&sih.vol,		/* Volume */
+			NULL,
+			&sih.pack,		/* Packing type (not used) */
+			&sih.flags,		/* Loop/stereo/16bit flags */
+			&sih.c2spd,		/* C4 speed */
+			&sih.name,		/* Instrument name */
+			&sih.magic);		/* 'SCRS' */
 
 #if 0
 		/* ST3 limit */
@@ -583,21 +574,13 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 #endif
 
 		if (sih.length > MAX_SAMPLE_SIZE) {
-			goto err3;
+			return -1;
 		}
 
-		sih.loopbeg = readmem32l(buf + 20);	/* Loop begin */
-		sih.loopend = readmem32l(buf + 24);	/* Loop end */
-		sih.vol = buf[28];			/* Volume */
-		sih.pack = buf[30];			/* Packing type (not used) */
-		sih.flags = buf[31];			/* Loop/stereo/16bit flags */
-		sih.c2spd = readmem16l(buf + 32);	/* C4 speed */
-		memcpy(sih.name, buf + 48, 28);		/* Instrument name */
-		sih.magic = readmem32b(buf + 76);	/* 'SCRS' */
 
-		if (buf[0] == 1 && sih.magic != MAGIC_SCRS) {
+		if (x == 1 && sih.magic != MAGIC_SCRS) {
 			D_(D_CRIT "error: instrument magic");
-			goto err3;
+			return -1;
 		}
 #ifndef LIBXMP_CORE_PLAYER
 		if (quirk87) {
@@ -632,29 +615,16 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 
 		libxmp_c2spd_to_note(sih.c2spd, &sub->xpo, &sub->fin);
 
-		if (hio_seek(f, start + 16L * sih.memseg, SEEK_SET) < 0) {
-			goto err3;
-		}
+		libxmp_buffer_seek(buf, start + 16L * sih.memseg, SEEK_SET);
 
-		ret = libxmp_load_sample(m, f, sfh.ffi == 1 ? 0 : SAMPLE_FLAG_UNS,
-								xxs, NULL);
+		ret = libxmp_load_sample(buf, m, sfh.ffi == 1 ? 0 : SAMPLE_FLAG_UNS, xxs, NULL);
 		if (ret < 0) {
-			goto err3;
+			return -1;
 		}
 	}
-
-	free(pp_pat);
-	free(pp_ins);
 
 	m->quirk |= QUIRKS_ST3 | QUIRK_ARPMEM;
 	m->read_event_type = READ_EVENT_ST3;
 
 	return 0;
-
-err3:
-	free(pp_pat);
-err2:
-	free(pp_ins);
-err:
-	return -1;
 }
