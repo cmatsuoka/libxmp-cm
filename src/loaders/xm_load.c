@@ -471,7 +471,7 @@ static int load_instruments(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_dat
 			struct xmp_sample *xxs;
 
 			if (sample_num >= mod->smp) {
-				mod->xxs = libxmp_realloc_samples(mod->xxs, &mod->smp, mod->smp * 3 / 2);
+				mod->xxs = libxmp_realloc_samples(mem, mod->xxs, &mod->smp, mod->smp * 3 / 2);
 				if (mod->xxs == NULL)
 					return -1;
 			}
@@ -552,7 +552,7 @@ static int load_instruments(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_dat
 	}
 
 	/* Final sample number adjustment */
-	mod->xxs = libxmp_realloc_samples(mod->xxs, &mod->smp, sample_num);
+	mod->xxs = libxmp_realloc_samples(mem, mod->xxs, &mod->smp, sample_num);
 	if (mod->xxs == NULL) {
 		return -1;
 	}

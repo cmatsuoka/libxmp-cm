@@ -10,15 +10,10 @@
 
 #define LIBXMP_BUFFER_ERRSIZE	80
 
-struct libxmp_buffer__ {
+typedef struct libxmp_buffer__ {
 	jmp_buf jmp;
-	uint8 *start;
-	uint8 *pos;
-	uint8 *end;
 	char _err[LIBXMP_BUFFER_ERRSIZE];
-};
-
-typedef struct libxmp_buffer__ *LIBXMP_BUFFER;
+} *LIBXMP_BUFFER;
 
 #define libxmp_buffer_catch(buf) setjmp((buf)->jmp)
 #define libxmp_buffer_error(buf) ((buf)->_err)

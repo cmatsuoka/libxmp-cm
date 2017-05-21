@@ -8,13 +8,10 @@
 
 #define LIBXMP_MEM_ERRSIZE	80
 
-struct libxmp_mem__ {
+typedef struct libxmp_mem__ {
 	jmp_buf jmp;
-	void *hash;
 	char _err[LIBXMP_MEM_ERRSIZE];
-};
-
-typedef struct libxmp_mem__ *LIBXMP_MEM;
+} *LIBXMP_MEM;
 
 #define libxmp_mem_catch(buf) setjmp((buf)->jmp)
 #define libxmp_mem_error(buf) ((buf)->_err)
@@ -24,6 +21,7 @@ void		libxmp_mem_release	(LIBXMP_MEM);
 void		libxmp_mem_throw	(LIBXMP_MEM, int, char *, ...);
 void		*libxmp_mem_calloc	(LIBXMP_MEM, size_t);
 void		*libxmp_mem_alloc	(LIBXMP_MEM, size_t);
+void		*libxmp_mem_realloc	(LIBXMP_MEM, void *, size_t);
 void		libxmp_mem_free		(LIBXMP_MEM, void *);
 void		libxmp_mem_clear	(LIBXMP_MEM);
 
