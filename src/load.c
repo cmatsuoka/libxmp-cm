@@ -308,63 +308,6 @@ int xmp_load_module(xmp_context opaque, void *src, long size)
 	return ret;
 }
 
-#if 0
-int xmp_load_module_from_memory(xmp_context opaque, void *mem, long size)
-{
-	struct context_data *ctx = (struct context_data *)opaque;
-	struct module_data *m = &ctx->m;
-	HIO_HANDLE *h;
-	int ret;
-
-	/* Use size < 0 for unknown/undetermined size */
-	if (size == 0)
-		size--;
-
-	if ((h = hio_open_mem(mem, size)) == NULL)
-		return -XMP_ERROR_SYSTEM;
-
-	if (ctx->state > XMP_STATE_UNLOADED)
-		xmp_release_module(opaque);
-
-	m->filename = NULL;
-	m->basename = NULL;
-	m->dirname = NULL;
-	m->size = size;
-
-	ret = load_module(opaque, h);
-
-	hio_close(h);
-
-	return ret;
-}
-
-int xmp_load_module_from_file(xmp_context opaque, void *file, long size)
-{
-	struct context_data *ctx = (struct context_data *)opaque;
-	struct module_data *m = &ctx->m;
-	HIO_HANDLE *h;
-	FILE *f = fdopen(fileno((FILE *)file), "rb");
-	int ret;
-
-	if ((h = hio_open_file(f)) == NULL)
-		return -XMP_ERROR_SYSTEM;
-
-	if (ctx->state > XMP_STATE_UNLOADED)
-		xmp_release_module(opaque);
-
-	m->filename = NULL;
-	m->basename = NULL;
-	m->dirname = NULL;
-	m->size = hio_size(h);
-
-	ret = load_module(opaque, h);
-
-	hio_close(h);
-
-	return ret;
-}
-#endif
-
 void xmp_release_module(xmp_context opaque)
 {
 	struct context_data *ctx = (struct context_data *)opaque;

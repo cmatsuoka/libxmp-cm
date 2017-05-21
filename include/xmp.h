@@ -350,7 +350,6 @@ EXPORT int         xmp_play_frame      (xmp_context);
 EXPORT int         xmp_play_buffer     (xmp_context, void *, int, int);
 EXPORT void        xmp_get_frame_info  (xmp_context, struct xmp_frame_info *);
 EXPORT void        xmp_end_player      (xmp_context);
-EXPORT void        xmp_inject_event    (xmp_context, int, struct xmp_event *);
 EXPORT void        xmp_get_module_info (xmp_context, struct xmp_module_info *);
 EXPORT char      **xmp_get_format_list (void);
 EXPORT int         xmp_next_position   (xmp_context);
@@ -363,9 +362,6 @@ EXPORT int         xmp_channel_mute    (xmp_context, int, int);
 EXPORT int         xmp_channel_vol     (xmp_context, int, int);
 EXPORT int         xmp_set_player      (xmp_context, int, int);
 EXPORT int         xmp_get_player      (xmp_context, int);
-EXPORT int         xmp_set_instrument_path (xmp_context, char *);
-EXPORT int         xmp_load_module_from_memory (xmp_context, void *, long);
-EXPORT int         xmp_load_module_from_file (xmp_context, void *, long);
 
 #ifdef __cplusplus
 }
