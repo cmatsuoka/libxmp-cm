@@ -36,8 +36,6 @@
 #include <unistd.h>
 #endif
 
-#include <fnmatch.h>
-
 /*
  * Handle special "module quirks" that can't be detected automatically
  * such as Protracker 2.x compatibility, vblank timing, etc.
@@ -131,6 +129,7 @@ static void module_quirks(struct context_data *ctx)
 	}
 }
 
+#if 0
 /* 
  * Check whether the given string matches one of the blacklisted glob
  * patterns. Used to filter file names stored in archive files.
@@ -160,6 +159,7 @@ int libxmp_exclude_match(const char *name)
 
 	return 0;
 }
+#endif
 
 #endif /* LIBXMP_CORE_PLAYER */
 
