@@ -28,46 +28,18 @@
 #include "hmn_extras.h"
 
 /*
- * Module extras
- */
-
-void libxmp_release_module_extras(struct context_data *ctx)
-{
-	struct module_data *m = &ctx->m;
-
-	if (HAS_MED_MODULE_EXTRAS(*m))
-		libxmp_med_release_module_extras(m);
-	else if (HAS_HMN_MODULE_EXTRAS(*m))
-		libxmp_hmn_release_module_extras(m);
-}
-
-/*
  * Channel extras
  */
 
-int libxmp_new_channel_extras(struct context_data *ctx, struct channel_data *xc)
+void libxmp_new_channel_extras(LIBXMP_MEM mem, struct context_data *ctx, struct channel_data *xc)
 {
 	struct module_data *m = &ctx->m;
 
 	if (HAS_MED_MODULE_EXTRAS(*m)) {
-		if (libxmp_med_new_channel_extras(xc) < 0)
-			return -1;
+		libxmp_med_new_channel_extras(mem, xc);
 	} else if (HAS_HMN_MODULE_EXTRAS(*m)) {
-		if (libxmp_hmn_new_channel_extras(xc) < 0)
-			return -1;
+		libxmp_hmn_new_channel_extras(mem, xc);
 	}
-
-	return 0;
-}
-
-void libxmp_release_channel_extras(struct context_data *ctx, struct channel_data *xc)
-{
-	struct module_data *m = &ctx->m;
-
-	if (HAS_MED_CHANNEL_EXTRAS(*m))
-		libxmp_med_release_channel_extras(xc);
-	else if (HAS_HMN_CHANNEL_EXTRAS(*m))
-		libxmp_hmn_release_channel_extras(xc);
 }
 
 void libxmp_reset_channel_extras(struct context_data *ctx, struct channel_data *xc)

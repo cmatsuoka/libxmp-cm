@@ -20,7 +20,6 @@
  * THE SOFTWARE.
  */
 
-#include <stdlib.h>
 #include "common.h"
 #include "player.h"
 #include "virtual.h"
@@ -83,24 +82,16 @@ void libxmp_hmn_play_extras(struct context_data *ctx, struct channel_data *xc, i
 	ce->volume = volume;
 }
 
-int libxmp_hmn_new_instrument_extras(struct xmp_instrument *xxi)
+void libxmp_hmn_new_instrument_extras(LIBXMP_MEM mem, struct xmp_instrument *xxi)
 {
-	xxi->extra = calloc(1, sizeof(struct hmn_instrument_extras));
-	if (xxi->extra == NULL)
-		return -1;
+	xxi->extra = libxmp_mem_calloc(mem, sizeof(struct hmn_instrument_extras));
 	HMN_INSTRUMENT_EXTRAS((*xxi))->magic = HMN_EXTRAS_MAGIC;
-
-	return 0;
 }
 
-int libxmp_hmn_new_channel_extras(struct channel_data *xc)
+void libxmp_hmn_new_channel_extras(LIBXMP_MEM mem, struct channel_data *xc)
 {
-	xc->extra = calloc(1, sizeof(struct hmn_channel_extras));
-	if (xc->extra == NULL)
-		return -1;
+	xc->extra = libxmp_mem_calloc(mem, sizeof(struct hmn_channel_extras));
 	HMN_CHANNEL_EXTRAS((*xc))->magic = HMN_EXTRAS_MAGIC;
-
-	return 0;
 }
 
 void libxmp_hmn_reset_channel_extras(struct channel_data *xc)
@@ -108,24 +99,10 @@ void libxmp_hmn_reset_channel_extras(struct channel_data *xc)
 	memset((char *)xc->extra + 4, 0, sizeof(struct hmn_channel_extras) - 4);
 }
 
-void libxmp_hmn_release_channel_extras(struct channel_data *xc)
+void libxmp_hmn_new_module_extras(LIBXMP_MEM mem, struct module_data *m)
 {
-	free(xc->extra);
-}
-
-int libxmp_hmn_new_module_extras(struct module_data *m)
-{
-	m->extra = calloc(1, sizeof(struct hmn_module_extras));
-	if (m->extra == NULL)
-		return -1;
+	m->extra = libxmp_mem_calloc(mem, sizeof(struct hmn_module_extras));
 	HMN_MODULE_EXTRAS((*m))->magic = HMN_EXTRAS_MAGIC;
-
-	return 0;
-}
-
-void libxmp_hmn_release_module_extras(struct module_data *m)
-{
-	free(m->extra);
 }
 
 void libxmp_hmn_extras_process_fx(struct context_data *ctx, struct channel_data *xc,

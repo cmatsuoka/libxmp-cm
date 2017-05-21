@@ -20,7 +20,6 @@
  * THE SOFTWARE.
  */
 
-#include <stdlib.h>
 #include "common.h"
 #include "player.h"
 #include "virtual.h"
@@ -343,24 +342,16 @@ void libxmp_med_play_extras(struct context_data *ctx, struct channel_data *xc, i
 	}
 }
 
-int libxmp_med_new_instrument_extras(struct xmp_instrument *xxi)
+void libxmp_med_new_instrument_extras(LIBXMP_MEM mem, struct xmp_instrument *xxi)
 {
-	xxi->extra = calloc(1, sizeof(struct med_instrument_extras));
-	if (xxi->extra == NULL)
-		return -1;
+	xxi->extra = libxmp_mem_calloc(mem, sizeof(struct med_instrument_extras));
 	MED_INSTRUMENT_EXTRAS((*xxi))->magic = MED_EXTRAS_MAGIC;
-
-	return 0;
 }
 
-int libxmp_med_new_channel_extras(struct channel_data *xc)
+void libxmp_med_new_channel_extras(LIBXMP_MEM mem, struct channel_data *xc)
 {
-	xc->extra = calloc(1, sizeof(struct med_channel_extras));
-	if (xc->extra == NULL)
-		return -1;
+	xc->extra = libxmp_mem_calloc(mem, sizeof(struct med_channel_extras));
 	MED_CHANNEL_EXTRAS((*xc))->magic = MED_EXTRAS_MAGIC;
-
-	return 0;
 }
 
 void libxmp_med_reset_channel_extras(struct channel_data *xc)
@@ -368,54 +359,18 @@ void libxmp_med_reset_channel_extras(struct channel_data *xc)
 	memset((char *)xc->extra + 4, 0, sizeof(struct med_channel_extras) - 4);
 }
 
-void libxmp_med_release_channel_extras(struct channel_data *xc)
-{
-	free(xc->extra);
-}
-
-int libxmp_med_new_module_extras(struct module_data *m)
+void libxmp_med_new_module_extras(LIBXMP_MEM mem, struct module_data *m)
 {
 	struct med_module_extras *me;
 	struct xmp_module *mod = &m->mod;
 
-	m->extra = calloc(1, sizeof(struct med_module_extras));
-	if (m->extra == NULL)
-		return -1;
+	m->extra = libxmp_mem_calloc(mem, sizeof(struct med_module_extras));
 	MED_MODULE_EXTRAS((*m))->magic = MED_EXTRAS_MAGIC;
 
 	me = (struct med_module_extras *)m->extra;
 
-        me->vol_table = calloc(sizeof(uint8 *), mod->ins);
-	if (me->vol_table == NULL)
-		return -1;
-        me->wav_table = calloc(sizeof(uint8 *), mod->ins);
-	if (me->wav_table == NULL)
-		return -1;
-
-	return 0;
-}
-
-void libxmp_med_release_module_extras(struct module_data *m)
-{
-	struct med_module_extras *me;
-	struct xmp_module *mod = &m->mod;
-	int i;
-
-	me = (struct med_module_extras *)m->extra;
-
-        if (me->vol_table) {
-		for (i = 0; i < mod->ins; i++)
-			free(me->vol_table[i]);
-		free(me->vol_table);
-	}
-
-	if (me->wav_table) {
-		for (i = 0; i < mod->ins; i++)
-			free(me->wav_table[i]);
-		free(me->wav_table);
-        }
-
-	free(m->extra);
+        me->vol_table = libxmp_mem_calloc(mem, sizeof(uint8 *) * mod->ins);
+        me->wav_table = libxmp_mem_calloc(mem, sizeof(uint8 *) * mod->ins);
 }
 
 void libxmp_med_extras_process_fx(struct context_data *ctx, struct channel_data *xc,

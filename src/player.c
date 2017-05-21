@@ -1551,9 +1551,7 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 #ifndef LIBXMP_CORE_PLAYER
 	for (i = 0; i < p->virt.virt_channels; i++) {
 		struct channel_data *xc = &p->xc_data[i];
-		if (libxmp_new_channel_extras(ctx, xc) < 0) {
-			return -XMP_ERROR_INTERNAL;
-		}
+		libxmp_new_channel_extras(mem, ctx, xc);
 	}
 #endif
 	reset_channels(ctx);
@@ -1756,10 +1754,6 @@ void xmp_end_player(xmp_context opaque)
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct player_data *p = &ctx->p;
 	struct flow_control *f = &p->flow;
-#ifndef LIBXMP_CORE_PLAYER
-	struct channel_data *xc;
-	int i;
-#endif
 	LIBXMP_MEM mem = p->mem;
 
 	if (ctx->state < XMP_STATE_PLAYING)
@@ -1767,16 +1761,7 @@ void xmp_end_player(xmp_context opaque)
 
 	ctx->state = XMP_STATE_LOADED;
 
-#ifndef LIBXMP_CORE_PLAYER
-	/* Free channel extras */
-	for (i = 0; i < p->virt.virt_channels; i++) {
-		xc = &p->xc_data[i];
-		libxmp_release_channel_extras(ctx, xc);
-	}
-#endif
-
 	libxmp_virt_off(ctx);
-
 	libxmp_mem_clear(mem);
 
 	p->xc_data = NULL;

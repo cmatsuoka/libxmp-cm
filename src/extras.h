@@ -1,9 +1,9 @@
 #ifndef LIBXMP_EXTRAS_H
 #define LIBXMP_EXTRAS_H
 
-void libxmp_release_module_extras(struct context_data *);
-int  libxmp_new_channel_extras(struct context_data *, struct channel_data *);
-void libxmp_release_channel_extras(struct context_data *, struct channel_data *);
+#include "mem.h"
+
+void libxmp_new_channel_extras(LIBXMP_MEM, struct context_data *, struct channel_data *);
 void libxmp_reset_channel_extras(struct context_data *, struct channel_data *);
 void libxmp_play_extras(struct context_data *, struct channel_data *, int);
 int  libxmp_extras_get_volume(struct context_data *, struct channel_data *);
