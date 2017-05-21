@@ -310,7 +310,8 @@ API_TESTS	= $(addprefix api_,$(API))
 
 PROBLEM_TESTS	= $(addprefix module_,$(PROBLEMATIC))
 
-TESTS		= $(OPENMPT_XM_TESTS)
+TESTS		= $(OPENMPT_XM_TESTS) \
+		  $(OPENMPT_S3M_TESTS)
 
 OLDTESTS		= $(READ_TESTS) \
 		  $(WRITE_TESTS) \

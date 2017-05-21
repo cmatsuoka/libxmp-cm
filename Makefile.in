@@ -56,7 +56,7 @@ include docs/Makefile
 include include/Makefile
 include src/Makefile
 include src/loaders/Makefile
-include src/loaders/prowizard/Makefile
+#include src/loaders/prowizard/Makefile
 include src/os2/Makefile
 include src/win32/Makefile
 include test/Makefile
