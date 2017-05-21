@@ -195,7 +195,7 @@ static void unroll_loop(struct xmp_sample *xxs)
 }
 
 
-int libxmp_load_sample(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, int flags, struct xmp_sample *xxs, const void *buffer)
+int libxmp_load_sample(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, int flags, struct xmp_sample *xxs, const void *buffer)
 {
 	int bytelen, extralen, unroll_extralen, i;
 
@@ -284,8 +284,7 @@ int libxmp_load_sample(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_
 		libxmp_buffer_read(buf, table, 16);
 		libxmp_buffer_read(buf, xxs->data + x2, x2);
 
-		adpcm4_decoder((uint8 *)xxs->data + x2,
-			       (uint8 *)xxs->data, table, bytelen);
+		adpcm4_decoder((uint8 *)xxs->data + x2, (uint8 *)xxs->data, table, bytelen);
 	} else
 #endif
 	{

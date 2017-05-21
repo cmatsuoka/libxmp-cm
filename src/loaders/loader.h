@@ -26,13 +26,13 @@
 
 #define DEFPAN(x) (0x80 + ((x) - 0x80) * m->defpan / 100)
 
-void	libxmp_init_instrument		(struct libxmp_mem *, struct module_data *);
-void	libxmp_alloc_subinstrument	(struct libxmp_mem *, struct xmp_module *, int, int);
-void	libxmp_init_pattern		(struct libxmp_mem *, struct xmp_module *);
-int	libxmp_alloc_pattern		(struct libxmp_mem *, struct xmp_module *, int);
-int	libxmp_alloc_track		(struct libxmp_mem *, struct xmp_module *, int, int);
-int	libxmp_alloc_tracks_in_pattern	(struct libxmp_mem *, struct xmp_module *, int);
-int	libxmp_alloc_pattern_tracks	(struct libxmp_mem *, struct xmp_module *, int, int);
+void	libxmp_init_instrument		(LIBXMP_MEM , struct module_data *);
+void	libxmp_alloc_subinstrument	(LIBXMP_MEM , struct xmp_module *, int, int);
+void	libxmp_init_pattern		(LIBXMP_MEM , struct xmp_module *);
+int	libxmp_alloc_pattern		(LIBXMP_MEM , struct xmp_module *, int);
+int	libxmp_alloc_track		(LIBXMP_MEM , struct xmp_module *, int, int);
+int	libxmp_alloc_tracks_in_pattern	(LIBXMP_MEM , struct xmp_module *, int);
+int	libxmp_alloc_pattern_tracks	(LIBXMP_MEM , struct xmp_module *, int, int);
 char	*libxmp_instrument_name		(struct xmp_module *, int, uint8 *, int);
 struct xmp_sample* libxmp_realloc_samples(struct xmp_sample *, int *, int);
 
@@ -46,7 +46,7 @@ void	libxmp_disable_continue_fx	(struct xmp_event *);
 int	libxmp_check_filename_case	(char *, char *, char *, int);
 void	libxmp_get_instrument_path	(struct module_data *, char *, int);
 void	libxmp_set_type			(struct module_data *, const char *, ...);
-int	libxmp_load_sample		(struct libxmp_mem *, LIBXMP_BUFFER, struct module_data *, int,
+int	libxmp_load_sample		(LIBXMP_MEM , LIBXMP_BUFFER, struct module_data *, int,
 					 struct xmp_sample *, const void *);
 
 extern uint8		libxmp_ord_xlat[];

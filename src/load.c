@@ -121,7 +121,7 @@ static char *get_basename(char *name)
 int xmp_test_module(void *src, long size, struct xmp_test_info *info)
 {
 	LIBXMP_BUFFER buf;
-	struct libxmp_mem *mem;
+	LIBXMP_MEM mem;
 	char name[XMP_NAME_SIZE];
 	int i;
 	int ret = -XMP_ERROR_SYSTEM;
@@ -137,7 +137,8 @@ int xmp_test_module(void *src, long size, struct xmp_test_info *info)
 	if ((mem = libxmp_mem_new()) == NULL) {
 		goto err2;
 	}
-	if (setjmp(mem->jmp) != 0) {
+	if ((err = libxmp_mem_catch(mem)) != NULL) {
+		D_(D_CRIT "%s", err);
 		goto err3;
 	}
 
@@ -193,7 +194,7 @@ static int load_module(xmp_context opaque, LIBXMP_BUFFER buf)
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
-	struct libxmp_mem *mem = &m->mem;
+	LIBXMP_MEM mem = m->mem;
 	int i, j, ret;
 	int test_result, load_result;
 
@@ -384,7 +385,7 @@ void xmp_release_module(xmp_context opaque)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct module_data *m = &ctx->m;
-	struct libxmp_mem *mem = &m->mem;
+	LIBXMP_MEM mem = m->mem;
 
 	/* can't test this here, we must call release_module to clean up
 	 * load errors

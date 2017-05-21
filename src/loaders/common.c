@@ -34,7 +34,7 @@
 #include "period.h"
 #include "loader.h"
 
-void libxmp_init_instrument(struct libxmp_mem *mem, struct module_data *m)
+void libxmp_init_instrument(LIBXMP_MEM mem, struct module_data *m)
 {
 	struct xmp_module *mod = &m->mod;
 
@@ -54,7 +54,7 @@ void libxmp_init_instrument(struct libxmp_mem *mem, struct module_data *m)
 	}
 }
 
-void libxmp_alloc_subinstrument(struct libxmp_mem *mem, struct xmp_module *mod, int i, int num)
+void libxmp_alloc_subinstrument(LIBXMP_MEM mem, struct xmp_module *mod, int i, int num)
 {
 	if (num == 0) {
 		return;
@@ -63,13 +63,13 @@ void libxmp_alloc_subinstrument(struct libxmp_mem *mem, struct xmp_module *mod, 
 	mod->xxi[i].sub = libxmp_mem_calloc(mem, sizeof (struct xmp_subinstrument) * num);
 }
 
-void libxmp_init_pattern(struct libxmp_mem *mem, struct xmp_module *mod)
+void libxmp_init_pattern(LIBXMP_MEM mem, struct xmp_module *mod)
 {
 	mod->xxt = libxmp_mem_calloc(mem, sizeof (struct xmp_track *) * mod->trk);
 	mod->xxp = libxmp_mem_calloc(mem, sizeof (struct xmp_pattern *) * mod->pat);
 }
 
-int libxmp_alloc_pattern(struct libxmp_mem *mem, struct xmp_module *mod, int num)
+int libxmp_alloc_pattern(LIBXMP_MEM mem, struct xmp_module *mod, int num)
 {
 	/* Sanity check */
 	if (num < 0 || num >= mod->pat || mod->xxp[num] != NULL) {
@@ -81,7 +81,7 @@ int libxmp_alloc_pattern(struct libxmp_mem *mem, struct xmp_module *mod, int num
 	return 0;
 }
 
-int libxmp_alloc_track(struct libxmp_mem *mem, struct xmp_module *mod, int num, int rows)
+int libxmp_alloc_track(LIBXMP_MEM mem, struct xmp_module *mod, int num, int rows)
 {
 	/* Sanity check */
 	if (num < 0 || num >= mod->trk || mod->xxt[num] != NULL || rows <= 0) {
@@ -94,7 +94,7 @@ int libxmp_alloc_track(struct libxmp_mem *mem, struct xmp_module *mod, int num, 
 	return 0;
 }
 
-int libxmp_alloc_tracks_in_pattern(struct libxmp_mem *mem, struct xmp_module *mod, int num)
+int libxmp_alloc_tracks_in_pattern(LIBXMP_MEM mem, struct xmp_module *mod, int num)
 {
 	int i;
 
@@ -113,7 +113,7 @@ int libxmp_alloc_tracks_in_pattern(struct libxmp_mem *mem, struct xmp_module *mo
 	return 0;
 }
 
-int libxmp_alloc_pattern_tracks(struct libxmp_mem *mem, struct xmp_module *mod, int num, int rows)
+int libxmp_alloc_pattern_tracks(LIBXMP_MEM mem, struct xmp_module *mod, int num, int rows)
 {
 	/* Sanity check */
 	if (rows < 0 || rows > 256) {

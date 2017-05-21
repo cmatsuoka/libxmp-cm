@@ -36,8 +36,8 @@
 #include "loader.h"
 #include "xm.h"
 
-static int xm_test(struct libxmp_mem *, LIBXMP_BUFFER , char *, const int);
-static int xm_load(struct libxmp_mem *, LIBXMP_BUFFER , struct module_data *, const int);
+static int xm_test(LIBXMP_MEM , LIBXMP_BUFFER , char *, const int);
+static int xm_load(LIBXMP_MEM , LIBXMP_BUFFER , struct module_data *, const int);
 
 const struct format_loader libxmp_loader_xm = {
 	"Fast Tracker II",
@@ -45,7 +45,7 @@ const struct format_loader libxmp_loader_xm = {
 	xm_load
 };
 
-static int xm_test(struct libxmp_mem *mem, LIBXMP_BUFFER buf, char *t, const int start)
+static int xm_test(LIBXMP_MEM mem, LIBXMP_BUFFER buf, char *t, const int start)
 {
 	char b[20];
 
@@ -60,7 +60,7 @@ static int xm_test(struct libxmp_mem *mem, LIBXMP_BUFFER buf, char *t, const int
 	return 0;
 }
 
-static int load_xm_pattern(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, int num, int version)
+static int load_xm_pattern(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, int num, int version)
 {
 	const int headsize = version > 0x0102 ? 9 : 8;
 	struct xmp_module *mod = &m->mod;
@@ -286,7 +286,7 @@ static int load_xm_pattern(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct mod
 	return 0;
 }
 
-static int load_patterns(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, int version)
+static int load_patterns(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, int version)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j;
@@ -328,7 +328,7 @@ static int load_patterns(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct modul
 #define XM_INST_HEADER_SIZE 33
 #define XM_INST_SIZE 208
 
-static int load_instruments(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, int version)
+static int load_instruments(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, int version)
 {
 	struct xmp_module *mod = &m->mod;
 	struct xm_instrument_header xih;
@@ -569,7 +569,7 @@ printf("instrument %d: size=%d name=%22.22s type=%d samples=%d\n", i, xih.size, 
 	return 0;
 }
 
-static int xm_load(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, const int start)
+static int xm_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, const int start)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j;

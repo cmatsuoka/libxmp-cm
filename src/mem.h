@@ -3,18 +3,15 @@
 
 #include <setjmp.h>
 
-#define LIBXMP_MEM_ENOMEM (-1)
 
-struct libxmp_mem {
-	void *hash;
-	jmp_buf jmp;
-};
+typedef struct libxmp_mem_opaque{} *LIBXMP_MEM;
 
-struct libxmp_mem *libxmp_mem_new(void);
-void	libxmp_mem_release	(struct libxmp_mem *);
-void	*libxmp_mem_calloc	(struct libxmp_mem *, size_t);
-void	*libxmp_mem_alloc	(struct libxmp_mem *, size_t);
-void	libxmp_mem_free		(struct libxmp_mem *, void *);
-void	libxmp_mem_clear	(struct libxmp_mem *);
+LIBXMP_MEM	libxmp_mem_new		(void);
+void		libxmp_mem_release	(LIBXMP_MEM);
+char		*libxmp_mem_catch	(LIBXMP_MEM);
+void		*libxmp_mem_calloc	(LIBXMP_MEM, size_t);
+void		*libxmp_mem_alloc	(LIBXMP_MEM, size_t);
+void		libxmp_mem_free		(LIBXMP_MEM, void *);
+void		libxmp_mem_clear	(LIBXMP_MEM);
 
 #endif

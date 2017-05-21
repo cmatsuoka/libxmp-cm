@@ -8,8 +8,8 @@
 
 struct format_loader {
 	const char *name;
-	int (*const test)(struct libxmp_mem *, LIBXMP_BUFFER, char *, const int);
-	int (*const loader)(struct libxmp_mem *, LIBXMP_BUFFER, struct module_data *, const int);
+	int (*const test)(LIBXMP_MEM, LIBXMP_BUFFER, char *, const int);
+	int (*const loader)(LIBXMP_MEM, LIBXMP_BUFFER, struct module_data *, const int);
 };
 
 char **format_list(void);

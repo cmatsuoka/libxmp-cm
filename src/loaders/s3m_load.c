@@ -79,8 +79,8 @@
 #define MAGIC_SCRI	MAGIC4('S','C','R','I')
 #define MAGIC_SCRS	MAGIC4('S','C','R','S')
 
-static int s3m_test(struct libxmp_mem *, LIBXMP_BUFFER , char *, const int);
-static int s3m_load(struct libxmp_mem *, LIBXMP_BUFFER , struct module_data *, const int);
+static int s3m_test(LIBXMP_MEM , LIBXMP_BUFFER , char *, const int);
+static int s3m_load(LIBXMP_MEM , LIBXMP_BUFFER , struct module_data *, const int);
 
 const struct format_loader libxmp_loader_s3m = {
 	"Scream Tracker 3",
@@ -88,7 +88,7 @@ const struct format_loader libxmp_loader_s3m = {
 	s3m_load
 };
 
-static int s3m_test(struct libxmp_mem *mem, LIBXMP_BUFFER buf, char *t, const int start)
+static int s3m_test(LIBXMP_MEM mem, LIBXMP_BUFFER buf, char *t, const int start)
 {
 	libxmp_buffer_seek(buf, start + 44, SEEK_SET);
 	if (libxmp_buffer_read32b(buf) != MAGIC_SCRM) {
@@ -224,7 +224,7 @@ static void xlat_fx(int c, struct xmp_event *e)
 	}
 }
 
-static int s3m_load(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, const int start)
+static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, const int start)
 {
 	struct xmp_module *mod = &m->mod;
 	int c, r, i;

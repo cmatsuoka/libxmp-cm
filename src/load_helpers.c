@@ -310,7 +310,7 @@ int libxmp_prepare_scan(struct context_data *ctx)
 {
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
-	struct libxmp_mem *mem = &m->mem;
+	LIBXMP_MEM mem = m->mem;
 	int i, ord;
 
 	if (mod->xxp == NULL || mod->xxt == NULL)

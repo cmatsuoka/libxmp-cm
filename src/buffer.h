@@ -4,7 +4,7 @@
 #include <setjmp.h>
 #include "types.h"
 
-typedef void *LIBXMP_BUFFER;
+typedef struct libxmp_buffer_opaque{} *LIBXMP_BUFFER;
 
 LIBXMP_BUFFER	libxmp_buffer_new	(void *, size_t);
 void		libxmp_buffer_release	(LIBXMP_BUFFER);

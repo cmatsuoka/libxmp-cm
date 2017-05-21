@@ -39,7 +39,11 @@ xmp_context xmp_create_context()
 
 	ctx = calloc(1, sizeof(struct context_data));
 	if (ctx == NULL) {
-		return NULL;
+		goto err;
+	}
+
+	if ((ctx->m.mem = libxmp_mem_new()) == NULL) {
+		goto err2;
 	}
 
 	ctx->state = XMP_STATE_UNLOADED;
@@ -47,15 +51,22 @@ xmp_context xmp_create_context()
 	ctx->s.numvoc = SMIX_NUMVOC;
 
 	return (xmp_context)ctx;
+
+    err2:
+	free(ctx);
+    err:
+	return NULL;
 }
 
 void xmp_free_context(xmp_context opaque)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 
-	if (ctx->state > XMP_STATE_UNLOADED)
+	if (ctx->state > XMP_STATE_UNLOADED) {
 		xmp_release_module(opaque);
+	}
 
+	libxmp_mem_release(ctx->m.mem);
 	free(opaque);
 }
 
