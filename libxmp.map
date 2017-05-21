@@ -1,4 +1,4 @@
-XMP_4.0 {
+XMP_5.0 {
   global:
     xmp_version;
     xmp_vercode;
@@ -22,44 +22,8 @@ XMP_4.0 {
     xmp_seek_time;
     xmp_channel_mute;
     xmp_channel_vol;
-    xmp_inject_event;
     xmp_set_player;
     xmp_get_player;
-    xmp_set_instrument_path;
   local:
     *;
 };
-
-XMP_4.1 {
-  global:
-    xmp_set_player;
-    xmp_get_player;
-    xmp_play_buffer;
-} XMP_4.0;
-
-XMP_4.2 {
-  global:
-    xmp_get_player;
-    xmp_load_module_from_memory;
-    xmp_start_smix;
-    xmp_end_smix;
-    xmp_smix_play_instrument;
-    xmp_smix_play_sample;
-    xmp_smix_channel_pan;
-    xmp_smix_load_sample;
-    xmp_smix_release_sample;
-} XMP_4.1;
-
-XMP_4.3 {
-  global:
-    xmp_set_player;
-    xmp_get_player;
-    xmp_load_module_from_file;
-} XMP_4.2;
-
-XMP_4.4 {
-  global:
-    xmp_set_player;
-    xmp_get_player;
-} XMP_4.3;
-
