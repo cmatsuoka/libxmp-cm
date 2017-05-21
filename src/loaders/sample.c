@@ -195,7 +195,7 @@ static void unroll_loop(struct xmp_sample *xxs)
 }
 
 
-int libxmp_load_sample(struct libxmp_buffer *buf, struct module_data *m, int flags, struct xmp_sample *xxs, const void *buffer)
+int libxmp_load_sample(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, int flags, struct xmp_sample *xxs, const void *buffer)
 {
 	int bytelen, extralen, unroll_extralen, i;
 
@@ -268,10 +268,7 @@ int libxmp_load_sample(struct libxmp_buffer *buf, struct module_data *m, int fla
 	}
 
 	/* add guard bytes before the buffer for higher order interpolation */
-	xxs->data = malloc(bytelen + extralen + unroll_extralen + 4);
-	if (xxs->data == NULL) {
-		goto err;
-	}
+	xxs->data = libxmp_mem_alloc(mem, bytelen + extralen + unroll_extralen + 4);
 
 	*(uint32 *)xxs->data = 0;
 	xxs->data += 4;
@@ -284,19 +281,15 @@ int libxmp_load_sample(struct libxmp_buffer *buf, struct module_data *m, int fla
 		int x2 = (bytelen + 1) >> 1;
 		char table[16];
 
-		if (libxmp_buffer_read(buf, table, 16) != 16) {
-			goto err2;
-		}
-		if (libxmp_buffer_read(buf, xxs->data + x2, x2) != x2) {
-			goto err2;
-		}
+		libxmp_buffer_read(buf, table, 16);
+		libxmp_buffer_read(buf, xxs->data + x2, x2);
 
 		adpcm4_decoder((uint8 *)xxs->data + x2,
 			       (uint8 *)xxs->data, table, bytelen);
 	} else
 #endif
 	{
-		int x = libxmp_buffer_read(buf, xxs->data, bytelen);
+		int x = libxmp_buffer_try_read(buf, xxs->data, bytelen);
 		if (x != bytelen) {
 			D_(D_WARN "short read (%d) in sample load", x - bytelen);
 			memset(xxs->data + x, 0, bytelen - x);
@@ -406,12 +399,4 @@ int libxmp_load_sample(struct libxmp_buffer *buf, struct module_data *m, int fla
 	}
 
 	return 0;
-
-#ifndef LIBXMP_CORE_PLAYER
-    err2:
-	free(xxs->data - 4);
-	xxs->data = NULL;	/* prevent double free in PCM load error */
-#endif
-    err:
-	return -1;
 }

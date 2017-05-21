@@ -36,8 +36,8 @@
 #include "loader.h"
 #include "xm.h"
 
-static int xm_test(struct libxmp_mem *, struct libxmp_buffer *, char *, const int);
-static int xm_load(struct libxmp_mem *, struct libxmp_buffer *, struct module_data *, const int);
+static int xm_test(struct libxmp_mem *, LIBXMP_BUFFER , char *, const int);
+static int xm_load(struct libxmp_mem *, LIBXMP_BUFFER , struct module_data *, const int);
 
 const struct format_loader libxmp_loader_xm = {
 	"Fast Tracker II",
@@ -45,13 +45,11 @@ const struct format_loader libxmp_loader_xm = {
 	xm_load
 };
 
-static int xm_test(struct libxmp_mem *mem, struct libxmp_buffer *buf, char *t, const int start)
+static int xm_test(struct libxmp_mem *mem, LIBXMP_BUFFER buf, char *t, const int start)
 {
 	char b[20];
 
-	if (libxmp_buffer_read(buf, b, 17) != 17) {		/* ID text */
-		return -1;
-	}
+	libxmp_buffer_read(buf, b, 17);		/* ID text */
 
 	if (memcmp(b, "Extended Module: ", 17)) {
 		return -1;
@@ -62,7 +60,7 @@ static int xm_test(struct libxmp_mem *mem, struct libxmp_buffer *buf, char *t, c
 	return 0;
 }
 
-static int load_xm_pattern(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct module_data *m, int num, int version)
+static int load_xm_pattern(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, int num, int version)
 {
 	const int headsize = version > 0x0102 ? 9 : 8;
 	struct xmp_module *mod = &m->mod;
@@ -101,9 +99,8 @@ static int load_xm_pattern(struct libxmp_mem *mem, struct libxmp_buffer *buf, st
 
 	pat = patbuf = libxmp_mem_calloc(mem, size);
 
-	if (libxmp_buffer_read(buf, patbuf, size) != size) {
-		return -1;
-	}
+	libxmp_buffer_read(buf, patbuf, size);
+
 	for (j = 0; j < (mod->chn * r); j++) {
 
 		/*if ((pat - patbuf) >= xph.datasize)
@@ -289,7 +286,7 @@ static int load_xm_pattern(struct libxmp_mem *mem, struct libxmp_buffer *buf, st
 	return 0;
 }
 
-static int load_patterns(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct module_data *m, int version)
+static int load_patterns(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, int version)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j;
@@ -331,7 +328,7 @@ static int load_patterns(struct libxmp_mem *mem, struct libxmp_buffer *buf, stru
 #define XM_INST_HEADER_SIZE 33
 #define XM_INST_SIZE 208
 
-static int load_instruments(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct module_data *m, int version)
+static int load_instruments(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, int version)
 {
 	struct xmp_module *mod = &m->mod;
 	struct xm_instrument_header xih;
@@ -416,10 +413,7 @@ printf("instrument %d: size=%d name=%22.22s type=%d samples=%d\n", i, xih.size, 
 			memset(&xi, 0, sizeof(struct xm_instrument));
 			libxmp_buffer_seek(buf, xih.size - XM_INST_HEADER_SIZE, SEEK_CUR);
 		} else {
-			if (libxmp_buffer_read(buf, xi.sample, 96) != 96) {
-				D_(D_CRIT "short read in instrument data");
-				return -1;
-			}
+			libxmp_buffer_read(buf, xi.sample, 96);
 
 			for (j = 0; j < 24; j++) {
 				xi.v_env[j] = libxmp_buffer_read16l(buf);	/* Points for volume envelope */
@@ -559,7 +553,7 @@ printf("instrument %d: size=%d name=%22.22s type=%d samples=%d\n", i, xih.size, 
 #endif
 
 			if (version > 0x0103) {
-				if (libxmp_load_sample(buf, m, flags, &mod->xxs[sub->sid], NULL) < 0) {
+				if (libxmp_load_sample(mem, buf, m, flags, &mod->xxs[sub->sid], NULL) < 0) {
 					return -1;
 				}
 			}
@@ -575,7 +569,7 @@ printf("instrument %d: size=%d name=%22.22s type=%d samples=%d\n", i, xih.size, 
 	return 0;
 }
 
-static int xm_load(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct module_data *m, const int start)
+static int xm_load(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, const int start)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j;
@@ -628,10 +622,7 @@ static int xm_load(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct mod
 		return -1;
 	}
 
-	if (libxmp_buffer_read(buf, &xfh.order, len) != len) {		/* Pattern order table */
-		D_(D_CRIT "error reading orders");
-		return -1;
-	}
+	libxmp_buffer_read(buf, &xfh.order, len);	/* Pattern order table */
 
 	strncpy(mod->name, (char *)xfh.name, 20);
 
@@ -718,7 +709,7 @@ static int xm_load(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct mod
 		for (i = 0; i < mod->ins; i++) {
 			for (j = 0; j < mod->xxi[i].nsm; j++) {
 				int sid = mod->xxi[i].sub[j].sid;
-				if (libxmp_load_sample(buf, m, SAMPLE_FLAG_DIFF, &mod->xxs[sid], NULL) < 0) {
+				if (libxmp_load_sample(mem, buf, m, SAMPLE_FLAG_DIFF, &mod->xxs[sid], NULL) < 0) {
 					return -1;
 				}
 			}

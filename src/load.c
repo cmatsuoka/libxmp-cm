@@ -61,23 +61,26 @@ int  libxmp_prepare_scan(struct context_data *);
 
 #define BUFLEN 16384
 
-static void set_md5sum(struct libxmp_buffer *buf, unsigned char *digest)
+static void set_md5sum(LIBXMP_BUFFER buf, unsigned char *digest)
 {
+/*
 	MD5_CTX ctx;
 	long n, size;
 
-	if (LIBXMP_BUFFER_SIZE(buf) <= 0) {
+	size = libxmp_buffer_size(buf);
+
+	if (size <= 0) {
 		memset(digest, 0, 16);
 		return;
 	}
 
 	MD5Init(&ctx);
 
-	size = LIBXMP_BUFFER_SIZE(buf);
 	for (n = 0; n < size; n += BUFLEN) {
 		MD5Update(&ctx, buf->start + n, size - n > BUFLEN ? BUFLEN : size - n);
 	}
 	MD5Final(digest, &ctx);
+*/
 }
 
 /*
@@ -117,16 +120,18 @@ static char *get_basename(char *name)
 
 int xmp_test_module(void *src, long size, struct xmp_test_info *info)
 {
-	struct libxmp_buffer *buf;
+	LIBXMP_BUFFER buf;
 	struct libxmp_mem *mem;
 	char name[XMP_NAME_SIZE];
 	int i;
 	int ret = -XMP_ERROR_SYSTEM;
+	char *err;
 
 	if ((buf = libxmp_buffer_new(src, size)) == NULL) {
 		goto err;
 	}
-	if (setjmp(buf->jmp) != 0) {
+	if ((err = libxmp_buffer_catch(buf)) != NULL) {
+		D_(D_CRIT "%s", err);
 		goto err2;
 	}
 	if ((mem = libxmp_mem_new()) == NULL) {
@@ -183,7 +188,7 @@ int xmp_test_module(void *src, long size, struct xmp_test_info *info)
 	return ret;
 }
 
-static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
+static int load_module(xmp_context opaque, LIBXMP_BUFFER buf)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct module_data *m = &ctx->m;
@@ -199,7 +204,7 @@ static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
 	for (i = 0; format_loader[i] != NULL; i++) {
 		libxmp_buffer_seek(buf, 0, SEEK_SET);
 
-		if (setjmp(buf->jmp)) {
+		if (libxmp_buffer_catch(buf) != NULL) {
 			/* Go to next format if access fault testing file */
 			continue;
 		}
@@ -207,9 +212,11 @@ static int load_module(xmp_context opaque, struct libxmp_buffer *buf)
 		D_(D_WARN "test %s", format_loader[i]->name);
 		test_result = format_loader[i]->test(mem, buf, NULL, 0);
 		if (test_result == 0) {
+			char *err;
+
 			libxmp_buffer_seek(buf, 0, SEEK_SET);
-			if (setjmp(buf->jmp)) {
-				D_(D_CRIT "exception loading module");
+			if ((err = libxmp_buffer_catch(buf)) != NULL) {
+				D_(D_CRIT "exception loading module: %s", err);
 				return -XMP_ERROR_LOAD;
 			}
 			D_(D_WARN "load format: %s", format_loader[i]->name);
@@ -294,7 +301,7 @@ int xmp_load_module(xmp_context opaque, void *src, long size)
 #ifndef LIBXMP_CORE_PLAYER
 	struct module_data *m = &ctx->m;
 #endif
-	struct libxmp_buffer *buf;
+	LIBXMP_BUFFER buf;
 	int ret;
 
 	if ((buf = libxmp_buffer_new(src, size)) == NULL) {

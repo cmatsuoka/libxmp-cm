@@ -171,7 +171,7 @@ char *libxmp_copy_adjust(char *s, uint8 *r, int n)
 	return s;
 }
 
-void libxmp_read_title(struct libxmp_buffer *buf, char *t, int s)
+void libxmp_read_title(LIBXMP_BUFFER buf, char *t, int s)
 {
 	uint8 name[XMP_NAME_SIZE];
 

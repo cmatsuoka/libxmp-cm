@@ -216,8 +216,7 @@ READ		= file_32bit_little_endian file_32bit_big_endian \
 		  file_16bit_little_endian file_16bit_big_endian \
 		  file_8bit \
 		  mem_32bit_little_endian mem_32bit_big_endian \
-		  mem_16bit_little_endian mem_16bit_big_endian \
-		  mem_hio mem_hio_nosize
+		  mem_16bit_little_endian mem_16bit_big_endian
 
 WRITE		= file_32bit_little_endian file_32bit_big_endian \
 		  file_16bit_little_endian file_16bit_big_endian \
@@ -348,7 +347,7 @@ TEST_DFILES	= Makefile $(TEST_OBJS:.o=.c) test.h md5.h data
 TEST_PATH	= .
 SRC_PATH	= ../src
 
-TEST_INTERNAL	= hio.o load_helpers.o loaders/itsex.o dataio.o scan.o buffer.o mem.o \
+TEST_INTERNAL	= load_helpers.o loaders/itsex.o dataio.o scan.o buffer.o mem.o \
 		  loaders/sample.o loaders/common.o period.o fnmatch.o memio.o
 
 T_OBJS 		= $(addprefix $(TEST_PATH)/,$(TEST_OBJS)) \

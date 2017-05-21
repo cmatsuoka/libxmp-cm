@@ -4,32 +4,24 @@
 #include <setjmp.h>
 #include "types.h"
 
-#define LIBXMP_BUFFER_ERANGE  (-1)
-#define LIBXMP_BUFFER_EINVAL  (-2)
-#define LIBXMP_BUFFER_EFORMAT (-3)
+typedef void *LIBXMP_BUFFER;
 
-struct libxmp_buffer {
-	jmp_buf jmp;
-	uint8 *start;
-	uint8 *pos;
-	uint8 *end;
-};
-
-#define LIBXMP_BUFFER_SIZE(b) (b->end - b->start)
-
-struct libxmp_buffer	*libxmp_buffer_new(unsigned char *, size_t);
-void	libxmp_buffer_release	(struct libxmp_buffer *);
-int	libxmp_buffer_left	(struct libxmp_buffer *);
-int	libxmp_buffer_scan	(struct libxmp_buffer *, char *, ...);
-int	libxmp_buffer_read	(struct libxmp_buffer *, void *, int);
-void	libxmp_buffer_seek	(struct libxmp_buffer *, long, int);
-long	libxmp_buffer_tell	(struct libxmp_buffer *);
-uint8	libxmp_buffer_read8	(struct libxmp_buffer *);
-uint16	libxmp_buffer_read16l	(struct libxmp_buffer *);
-uint16	libxmp_buffer_read16b	(struct libxmp_buffer *);
-uint32	libxmp_buffer_read24l	(struct libxmp_buffer *);
-uint32	libxmp_buffer_read24b	(struct libxmp_buffer *);
-uint32	libxmp_buffer_read32l	(struct libxmp_buffer *);
-uint32	libxmp_buffer_read32b	(struct libxmp_buffer *);
+LIBXMP_BUFFER	libxmp_buffer_new	(void *, size_t);
+void		libxmp_buffer_release	(LIBXMP_BUFFER);
+char		*libxmp_buffer_catch	(LIBXMP_BUFFER);
+int		libxmp_buffer_left	(LIBXMP_BUFFER);
+int		libxmp_buffer_scan	(LIBXMP_BUFFER, char *, ...);
+int		libxmp_buffer_try_read	(LIBXMP_BUFFER, void *, int);
+void		libxmp_buffer_read	(LIBXMP_BUFFER, void *, int);
+void		libxmp_buffer_seek	(LIBXMP_BUFFER, long, int);
+long		libxmp_buffer_tell	(LIBXMP_BUFFER);
+long		libxmp_buffer_size	(LIBXMP_BUFFER);
+uint8		libxmp_buffer_read8	(LIBXMP_BUFFER);
+uint16		libxmp_buffer_read16l	(LIBXMP_BUFFER);
+uint16		libxmp_buffer_read16b	(LIBXMP_BUFFER);
+uint32		libxmp_buffer_read24l	(LIBXMP_BUFFER);
+uint32		libxmp_buffer_read24b	(LIBXMP_BUFFER);
+uint32		libxmp_buffer_read32l	(LIBXMP_BUFFER);
+uint32		libxmp_buffer_read32b	(LIBXMP_BUFFER);
 
 #endif

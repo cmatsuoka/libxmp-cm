@@ -4,7 +4,7 @@
 
 #include "loader.h"
 
-static inline uint32 read_bits(struct libxmp_buffer *ibuf, uint32 *bitbuf, int *bitnum, int n)
+static inline uint32 read_bits(LIBXMP_BUFFER ibuf, uint32 *bitbuf, int *bitnum, int n)
 {
 	uint32 retval = 0;
 	int i = n;
@@ -33,7 +33,7 @@ static inline uint32 read_bits(struct libxmp_buffer *ibuf, uint32 *bitbuf, int *
 }
 
 
-int itsex_decompress8(struct libxmp_buffer *src, uint8 *dst, int len, int it215)
+int itsex_decompress8(LIBXMP_BUFFER src, uint8 *dst, int len, int it215)
 {
 	/* uint32 size = 0; */
 	uint32 block_count = 0;
@@ -121,7 +121,7 @@ int itsex_decompress8(struct libxmp_buffer *src, uint8 *dst, int len, int it215)
 	return 0;
 }
 
-int itsex_decompress16(struct libxmp_buffer *src, int16 *dst, int len, int it215)
+int itsex_decompress16(LIBXMP_BUFFER src, int16 *dst, int len, int it215)
 {
 	/* uint32 size = 0; */
 	uint32 block_count = 0;

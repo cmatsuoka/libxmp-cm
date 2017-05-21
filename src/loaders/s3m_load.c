@@ -79,8 +79,8 @@
 #define MAGIC_SCRI	MAGIC4('S','C','R','I')
 #define MAGIC_SCRS	MAGIC4('S','C','R','S')
 
-static int s3m_test(struct libxmp_mem *, struct libxmp_buffer *, char *, const int);
-static int s3m_load(struct libxmp_mem *, struct libxmp_buffer *, struct module_data *, const int);
+static int s3m_test(struct libxmp_mem *, LIBXMP_BUFFER , char *, const int);
+static int s3m_load(struct libxmp_mem *, LIBXMP_BUFFER , struct module_data *, const int);
 
 const struct format_loader libxmp_loader_s3m = {
 	"Scream Tracker 3",
@@ -88,7 +88,7 @@ const struct format_loader libxmp_loader_s3m = {
 	s3m_load
 };
 
-static int s3m_test(struct libxmp_mem *mem, struct libxmp_buffer *buf, char *t, const int start)
+static int s3m_test(struct libxmp_mem *mem, LIBXMP_BUFFER buf, char *t, const int start)
 {
 	libxmp_buffer_seek(buf, start + 44, SEEK_SET);
 	if (libxmp_buffer_read32b(buf) != MAGIC_SCRM) {
@@ -224,7 +224,7 @@ static void xlat_fx(int c, struct xmp_event *e)
 	}
 }
 
-static int s3m_load(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct module_data *m, const int start)
+static int s3m_load(struct libxmp_mem *mem, LIBXMP_BUFFER buf, struct module_data *m, const int start)
 {
 	struct xmp_module *mod = &m->mod;
 	int c, r, i;
@@ -322,14 +322,10 @@ static int s3m_load(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct mo
 
 	if (sfh.ordnum <= XMP_MAX_MOD_LENGTH) {
 		mod->len = sfh.ordnum;
-		if (libxmp_buffer_read(buf, mod->xxo, mod->len) != mod->len) {
-			return -1;
-		}
+		libxmp_buffer_read(buf, mod->xxo, mod->len);
 	} else {
 		mod->len = XMP_MAX_MOD_LENGTH;
-		if (libxmp_buffer_read(buf, mod->xxo, mod->len) != mod->len) {
-			return -1;
-		}
+		libxmp_buffer_read(buf, mod->xxo, mod->len);
 		libxmp_buffer_seek(buf, sfh.ordnum - XMP_MAX_MOD_LENGTH, SEEK_CUR);
 	}
 
@@ -539,7 +535,7 @@ static int s3m_load(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct mo
 			sub->vol = sah.vol;
 			libxmp_c2spd_to_note(sah.c2spd, &sub->xpo, &sub->fin);
 			sub->xpo += 12;
-			ret = libxmp_load_sample(buf, m, SAMPLE_FLAG_ADLIB, xxs, (char *)&sah.reg);
+			ret = libxmp_load_sample(mem, buf, m, SAMPLE_FLAG_ADLIB, xxs, (char *)&sah.reg);
 			if (ret < 0) {
 				return -1;
 			}
@@ -617,7 +613,7 @@ static int s3m_load(struct libxmp_mem *mem, struct libxmp_buffer *buf, struct mo
 
 		libxmp_buffer_seek(buf, start + 16L * sih.memseg, SEEK_SET);
 
-		ret = libxmp_load_sample(buf, m, sfh.ffi == 1 ? 0 : SAMPLE_FLAG_UNS, xxs, NULL);
+		ret = libxmp_load_sample(mem, buf, m, sfh.ffi == 1 ? 0 : SAMPLE_FLAG_UNS, xxs, NULL);
 		if (ret < 0) {
 			return -1;
 		}

@@ -10,6 +10,7 @@ void create_simple_module(struct context_data *ctx, int ins, int pat)
 {
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
+	struct libxmp_mem *mem = &m->mem;
 	int i;
 
 	libxmp_load_prologue(ctx);
@@ -25,17 +26,17 @@ void create_simple_module(struct context_data *ctx, int ins, int pat)
 	mod->xxo[0] = 0;
 	mod->xxo[1] = 1;
 
-	libxmp_init_pattern(mod);
+	libxmp_init_pattern(mem, mod);
 
 	for (i = 0; i < mod->pat; i++) {
-		libxmp_alloc_pattern_tracks(mod, i, 64);
+		libxmp_alloc_pattern_tracks(mem, mod, i, 64);
 	}
 
-	libxmp_init_instrument(m);
+	libxmp_init_instrument(mem, m);
 
 	for (i = 0; i < mod->ins; i++) {
 		mod->xxi[i].nsm = 1;
-		libxmp_alloc_subinstrument(mod, i, 1);
+		libxmp_alloc_subinstrument(mem, mod, i, 1);
 
 		mod->xxi[i].sub[0].pan = 0x80;
 		mod->xxi[i].sub[0].vol = 0x40;

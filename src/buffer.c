@@ -27,75 +27,107 @@
 #include "buffer.h"
 #include "common.h"
 
-struct libxmp_buffer *libxmp_buffer_new(unsigned char *p, size_t size)
-{
-	struct libxmp_buffer *buf;
+#define LIBXMP_BUFFER_ERRSIZE 80
+#define B(b) ((struct libxmp_buffer *)b)
 
-	if ((buf = malloc(sizeof (struct libxmp_buffer))) == NULL) {
+struct libxmp_buffer {
+	jmp_buf jmp;
+	uint8 *start;
+	uint8 *pos;
+	uint8 *end;
+	char _err[LIBXMP_BUFFER_ERRSIZE];
+};
+
+LIBXMP_BUFFER libxmp_buffer_new(void *p, size_t size)
+{
+	struct libxmp_buffer *b;
+
+	if ((b = malloc(sizeof (struct libxmp_buffer))) == NULL) {
 		goto err;
 	}
 
-	D_(D_WARN "BUF=%p", buf);
-	buf->start = buf->pos = p;
-	buf->end = buf->start + size;
+	D_(D_WARN "BUF=%p", b);
+	b->start = b->pos = p;
+	b->end = b->start + size;
 
-	return buf;
+	return (LIBXMP_BUFFER)b;
 
     err:
 	return NULL;
 }
 
-void libxmp_buffer_release(struct libxmp_buffer *buf)
+void libxmp_buffer_release(LIBXMP_BUFFER buf)
 {
 	D_(D_WARN "FREE BUF=%p", buf);
 	free(buf);
 }
 
-#define ASSIGN_ENDIAN(T,fmt,f) do {					\
+char *libxmp_buffer_catch(LIBXMP_BUFFER buf)
+{
+	int ret;
+
+	if ((ret = setjmp(B(buf)->jmp)) == 0) {
+		return NULL;
+	} else {
+		return B(buf)->_err;
+	}
+}
+
+void libxmp_buffer_throw(LIBXMP_BUFFER buf, char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsnprintf(B(buf)->_err, LIBXMP_BUFFER_ERRSIZE, fmt, ap);
+	va_end(ap);
+
+	longjmp(B(buf)->jmp, -1);
+}
+
+#define ASSIGN_ENDIAN(buf,T,fmt,f) do {					\
 	char e = *(fmt)++;						\
 	T *b = va_arg(ap, T *);						\
 	if (b == NULL) {						\
-		buf->pos += sizeof (T);					\
+		(buf)->pos += sizeof (T);				\
 	} else {							\
 		if (e == 'l') {						\
 			*b = (T)libxmp_buffer_read##f##l(buf);		\
 		} else if (e == 'b') {					\
 			*b = (T)libxmp_buffer_read##f##b(buf);		\
 		} else {						\
-			fprintf(stderr, "libxmp: buffer scan: invalid endian: %c\n", e);	\
-			longjmp(buf->jmp, LIBXMP_BUFFER_EFORMAT);	\
+			libxmp_buffer_throw((buf), "%s:%d: invalid endian: %c\n", __FUNCTION__, __LINE__, e);	\
 		}							\
 	}								\
 } while (0)
 
-#define ASSIGN_VALUE(T,fmt,size) do {				\
+#define ASSIGN_VALUE(buf,T,fmt,size) do {			\
 	switch (size) {						\
 	case 8:							\
 		{ T *b = va_arg(ap, T *);			\
 		if (b == NULL) {				\
-			buf->pos++;				\
+			(buf)->pos++;				\
 		} else {					\
 			*b = (T)libxmp_buffer_read8(buf);	\
 		}						\
 		break; }					\
 	case 16:						\
-		ASSIGN_ENDIAN(T, (fmt), 16);			\
+		ASSIGN_ENDIAN((buf), T, (fmt), 16);		\
 		break;						\
 	case 24:						\
-		ASSIGN_ENDIAN(T, (fmt), 24);			\
+		ASSIGN_ENDIAN((buf), T, (fmt), 24);		\
 		break;						\
 	case 32:						\
-		ASSIGN_ENDIAN(T, (fmt), 32);			\
+		ASSIGN_ENDIAN((buf), T, (fmt), 32);		\
 		break;						\
 	}							\
 } while (0)
 
-int libxmp_buffer_left(struct libxmp_buffer *buf)
+int libxmp_buffer_left(LIBXMP_BUFFER buf)
 {
-	return buf->end - buf->pos;
+	return B(buf)->end - B(buf)->pos;
 }
 
-int libxmp_buffer_scan(struct libxmp_buffer *buf, char *fmt, ...)
+int libxmp_buffer_scan(LIBXMP_BUFFER buf, char *fmt, ...)
 {
 	va_list ap;
 	int size;
@@ -109,21 +141,19 @@ int libxmp_buffer_scan(struct libxmp_buffer *buf, char *fmt, ...)
 		switch (*fmt++) {
 		case 's':
 			size = strtoul(fmt, &fmt, 10);
-			if (libxmp_buffer_read(buf, va_arg(ap, void *), size) != size) {
-				longjmp(buf->jmp, LIBXMP_BUFFER_ERANGE);
-			}
+			libxmp_buffer_read(buf, va_arg(ap, void *), size);
 			break;
 		case 'b':
 			size = strtoul(fmt, &fmt, 10);
-			ASSIGN_VALUE(uint8, fmt, size);
+			ASSIGN_VALUE(B(buf), uint8, fmt, size);
 			break;
 		case 'w':
 			size = strtoul(fmt, &fmt, 10);
-			ASSIGN_VALUE(uint16, fmt, size);
+			ASSIGN_VALUE(B(buf), uint16, fmt, size);
 			break;
 		case 'd':
 			size = strtoul(fmt, &fmt, 10);
-			ASSIGN_VALUE(uint32, fmt, size);
+			ASSIGN_VALUE(B(buf), uint32, fmt, size);
 			break;
 		default:
 			goto err;
@@ -144,141 +174,156 @@ int libxmp_buffer_scan(struct libxmp_buffer *buf, char *fmt, ...)
 	return -1;
 }
 
-int libxmp_buffer_read(struct libxmp_buffer *buf, void *dst, int size)
+void libxmp_buffer_read(LIBXMP_BUFFER buf, void *dst, int size)
+{
+	/* check range */
+	if (B(buf)->pos + size >= B(buf)->end) {
+		libxmp_buffer_throw(buf, "%s:%d: invalid read (size %ld)", size);
+	}
+
+	memcpy(dst, B(buf)->pos, size);
+	B(buf)->pos += size;
+}
+
+int libxmp_buffer_try_read(LIBXMP_BUFFER buf, void *dst, int size)
 {
 	D_(D_INFO "size=%d", size);
 
 	/* check range */
-	if (buf->pos + size >= buf->end) {
-		size = buf->end - buf->pos;
+	if (B(buf)->pos + size >= B(buf)->end) {
+		size = B(buf)->end - B(buf)->pos;
 	}
 
-	memcpy(dst, buf->pos, size);
-	buf->pos += size;
+	memcpy(dst, B(buf)->pos, size);
+	B(buf)->pos += size;
 
 	return size;
 }
 
 #define CHECK_RANGE(b,x) do {					\
-	D_(D_INFO "offset=%ld size=%ld", (x) - (b)->start, (b)->end - (b)->start); \
 	if ((x) >= (b)->end || (x) < (b)->start) {		\
-		longjmp((b)->jmp, LIBXMP_BUFFER_ERANGE);	\
+		libxmp_buffer_throw((b), "%s:%d: invalid offset %ld (size %ld)", \
+			__FUNCTION__, __LINE__, (x)-(b)->start, (b)->end-(b)->start);	\
 	}							\
 	(b)->pos = (x);						\
 } while (0)
 
-void libxmp_buffer_seek(struct libxmp_buffer *buf, long offset, int whence)
+void libxmp_buffer_seek(LIBXMP_BUFFER buf, long offset, int whence)
 {
 	switch (whence) {
 	case SEEK_SET:
-		CHECK_RANGE(buf, buf->start + offset);
+		CHECK_RANGE(B(buf), B(buf)->start + offset);
 		break;
 	case SEEK_CUR:
-		CHECK_RANGE(buf, buf->pos + offset);
+		CHECK_RANGE(B(buf), B(buf)->pos + offset);
 		break;
 	case SEEK_END:
-		CHECK_RANGE(buf, buf->end - offset - 1);
+		CHECK_RANGE(B(buf), B(buf)->end - offset - 1);
 		break;
 	default:
-		fprintf(stderr, "libxmp: buffer: invalid seek whence: %d\n", whence);
-		longjmp(buf->jmp, LIBXMP_BUFFER_EINVAL);
+		libxmp_buffer_throw(buf, "buffer seek: invalid seek whence %d", whence);
 	}
 }
 
-long libxmp_buffer_tell(struct libxmp_buffer *buf)
+long libxmp_buffer_tell(LIBXMP_BUFFER buf)
 {
-	return buf->pos - buf->start;
+	return B(buf)->pos - B(buf)->start;
+}
+
+long libxmp_buffer_size(LIBXMP_BUFFER buf)
+{
+	return B(buf)->end - B(buf)->start;
 }
 
 
 #define CHECK_SIZE(b,x) do {					\
-	D_(D_INFO "pos=%ld size=%ld", (b)->pos - (b)->start, (b)->end - (b)->start); \
 	if ((b)->pos + (x) >= (b)->end) {			\
-		longjmp((b)->jmp, LIBXMP_BUFFER_ERANGE);	\
+		libxmp_buffer_throw((b)->jmp, "%s:%d: invalid position %ld (size %ld)", \
+			__FUNCTION__, __LINE__, (b)->pos-(b)->start, (b)->end-(b)->start);	\
 	}							\
 } while (0)
 
-uint8 libxmp_buffer_read8(struct libxmp_buffer *buf)
+uint8 libxmp_buffer_read8(LIBXMP_BUFFER buf)
 {
-	CHECK_SIZE(buf, 1);
+	CHECK_SIZE(B(buf), 1);
 
-	return *buf->pos++;
+	return *B(buf)->pos++;
 }
 
-uint16 libxmp_buffer_read16l(struct libxmp_buffer *buf)
+uint16 libxmp_buffer_read16l(LIBXMP_BUFFER buf)
 {
 	uint16 a, b;
 
-	CHECK_SIZE(buf, 2);
+	CHECK_SIZE(B(buf), 2);
 
-	a = (uint16)*buf->pos++;
-	b = (uint16)*buf->pos++;
+	a = (uint16)*B(buf)->pos++;
+	b = (uint16)*B(buf)->pos++;
 
 	return (b << 8) | a;
 }
 
-uint16 libxmp_buffer_read16b(struct libxmp_buffer *buf)
+uint16 libxmp_buffer_read16b(LIBXMP_BUFFER buf)
 {
 	uint16 a, b;
 
-	CHECK_SIZE(buf, 2);
+	CHECK_SIZE(B(buf), 2);
 
-	a = (uint16)*buf->pos++;
-	b = (uint16)*buf->pos++;
+	a = (uint16)*B(buf)->pos++;
+	b = (uint16)*B(buf)->pos++;
 
 	return (a << 8) | b;
 }
 
-uint32 libxmp_buffer_read24l(struct libxmp_buffer *buf)
+uint32 libxmp_buffer_read24l(LIBXMP_BUFFER buf)
 {
 	uint32 a, b, c;
 
-	CHECK_SIZE(buf, 3);
+	CHECK_SIZE(B(buf), 3);
 
-	a = (uint32)*buf->pos++;
-	b = (uint32)*buf->pos++;
-	c = (uint32)*buf->pos++;
+	a = (uint32)*B(buf)->pos++;
+	b = (uint32)*B(buf)->pos++;
+	c = (uint32)*B(buf)->pos++;
 
 	return (c << 16) | (b << 8) | a;
 }
 
-uint32 libxmp_buffer_read24b(struct libxmp_buffer *buf)
+uint32 libxmp_buffer_read24b(LIBXMP_BUFFER buf)
 {
 	uint32 a, b, c;
 
-	CHECK_SIZE(buf, 3);
+	CHECK_SIZE(B(buf), 3);
 
-	a = (uint32)*buf->pos++;
-	b = (uint32)*buf->pos++;
-	c = (uint32)*buf->pos++;
+	a = (uint32)*B(buf)->pos++;
+	b = (uint32)*B(buf)->pos++;
+	c = (uint32)*B(buf)->pos++;
 
 	return (a << 16) | (b << 8) | c;
 }
 
-uint32 libxmp_buffer_read32l(struct libxmp_buffer *buf)
+uint32 libxmp_buffer_read32l(LIBXMP_BUFFER buf)
 {
 	uint32 a, b, c, d;
 
-	CHECK_SIZE(buf, 4);
+	CHECK_SIZE(B(buf), 4);
 
-	a = (uint32)*buf->pos++;
-	b = (uint32)*buf->pos++;
-	c = (uint32)*buf->pos++;
-	d = (uint32)*buf->pos++;
+	a = (uint32)*B(buf)->pos++;
+	b = (uint32)*B(buf)->pos++;
+	c = (uint32)*B(buf)->pos++;
+	d = (uint32)*B(buf)->pos++;
 
 	return (d << 24) | (c << 16) | (b << 8) | a;
 }
 
-uint32 libxmp_buffer_read32b(struct libxmp_buffer *buf)
+uint32 libxmp_buffer_read32b(LIBXMP_BUFFER buf)
 {
 	uint32 a, b, c, d;
 
-	CHECK_SIZE(buf, 4);
+	CHECK_SIZE(B(buf), 4);
 
-	a = (uint32)*buf->pos++;
-	b = (uint32)*buf->pos++;
-	c = (uint32)*buf->pos++;
-	d = (uint32)*buf->pos++;
+	a = (uint32)*B(buf)->pos++;
+	b = (uint32)*B(buf)->pos++;
+	c = (uint32)*B(buf)->pos++;
+	d = (uint32)*B(buf)->pos++;
 
 	return (a << 24) | (b << 16) | (c << 8) | d;
 }
