@@ -791,18 +791,14 @@ int libxmp_mixer_numvoices(struct context_data *ctx, int num)
 	}
 }
 
-int libxmp_mixer_on(struct context_data *ctx, int rate, int format, int c4rate)
+void libxmp_mixer_on(struct context_data *ctx, int rate, int format, int c4rate)
 {
 	struct mixer_data *s = &ctx->s;
+	struct player_data *p = &ctx->p;
+	LIBXMP_MEM mem = p->mem;
 
-	s->buffer = calloc(2, XMP_MAX_FRAMESIZE);
-	if (s->buffer == NULL)
-		goto err;
-
-	s->buf32 = calloc(sizeof(int), XMP_MAX_FRAMESIZE);
-	if (s->buf32 == NULL)
-		goto err1;
-
+	s->buffer = libxmp_mem_calloc(mem, 2 * XMP_MAX_FRAMESIZE);
+	s->buf32 = libxmp_mem_calloc(mem, sizeof(int) * XMP_MAX_FRAMESIZE);
 	s->freq = rate;
 	s->format = format;
 	s->amplify = DEFAULT_AMPLIFY;
@@ -812,21 +808,12 @@ int libxmp_mixer_on(struct context_data *ctx, int rate, int format, int c4rate)
 	s->dsp = XMP_DSP_LOWPASS;	/* enable filters by default */
 	/* s->numvoc = SMIX_NUMVOC; */
 	s->dtright = s->dtleft = 0;
-
-	return 0;
-
-    err1:
-	free(s->buffer);
-    err:
-	return -1;
 }
 
 void libxmp_mixer_off(struct context_data *ctx)
 {
 	struct mixer_data *s = &ctx->s;
 
-	free(s->buffer);
-	free(s->buf32);
 	s->buf32 = NULL;
 	s->buffer = NULL;
 }

@@ -60,7 +60,7 @@ struct mixer_voice {
 #endif
 };
 
-int	libxmp_mixer_on		(struct context_data *, int, int, int);
+void	libxmp_mixer_on		(struct context_data *, int, int, int);
 void	libxmp_mixer_off	(struct context_data *);
 void    libxmp_mixer_setvol	(struct context_data *, int, int);
 void    libxmp_mixer_seteffect	(struct context_data *, int, int, int);

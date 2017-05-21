@@ -1494,9 +1494,7 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 		xmp_end_player(opaque);
 	}
 
-	if (libxmp_mixer_on(ctx, rate, format, m->c4rate) < 0) {
-		return -XMP_ERROR_INTERNAL;
-	}
+	libxmp_mixer_on(ctx, rate, format, m->c4rate);
 
 	p->master_vol = 100;
 	p->gvol = m->volbase;
