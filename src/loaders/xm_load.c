@@ -357,8 +357,6 @@ static int load_instruments(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_dat
 			&xih.samples,		/* Number of samples */
 			&xih.sh_size);		/* Sample header size */
 
-printf("instrument %d: size=%d name=%22.22s type=%d samples=%d\n", i, xih.size, xih.name, xih.type, xih.samples);
-
 		/* Sanity check */
 		if (xih.samples > 0x10 || (xih.samples > 0 && xih.sh_size > 0x100)) {
 			D_(D_CRIT "Sanity check: %d %d", xih.samples, xih.sh_size);
@@ -587,8 +585,6 @@ static int xm_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, con
 		&xfh.flags,		/* 0=Amiga freq table, 1=Linear */
 		&xfh.tempo,		/* Default tempo */
 		&xfh.bpm);		/* Default bpm */
-
-	printf("id=%17.17s name=%20.20s len=%d pat=%d chn=%d ins=%d version=%04x bpm=%d\n", xfh.id, xfh.name, xfh.songlen, xfh.patterns, xfh.channels, xfh.instruments, xfh.version, xfh.bpm);
 
 	/* Sanity checks */
 	if (xfh.songlen > 256 || xfh.patterns > 256 || xfh.instruments > 255) {
