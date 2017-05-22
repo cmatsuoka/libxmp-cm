@@ -292,27 +292,7 @@ int xmp_channel_vol(xmp_context opaque, int chn, int vol)
 	return ret;
 }
 
-#ifdef USE_VERSIONED_SYMBOLS
-/*
-EXPORT extern int xmp_set_player_v40__(xmp_context, int, int);
-EXPORT extern int xmp_set_player_v41__(xmp_context, int, int)
-	__attribute__((alias("xmp_set_player_v40__")));
-EXPORT extern int xmp_set_player_v43__(xmp_context, int, int)
-	__attribute__((alias("xmp_set_player_v40__")));
-EXPORT extern int xmp_set_player_v44__(xmp_context, int, int)
-	__attribute__((alias("xmp_set_player_v40__")));
-
-asm(".symver xmp_set_player_v40__, xmp_set_player@XMP_4.0");
-asm(".symver xmp_set_player_v41__, xmp_set_player@XMP_4.1");
-asm(".symver xmp_set_player_v43__, xmp_set_player@XMP_4.3");
-asm(".symver xmp_set_player_v44__, xmp_set_player@@XMP_4.4");
-*/
-#define xmp_set_player__ xmp_set_player_v40__
-#else
-#define xmp_set_player__ xmp_set_player
-#endif
-
-int xmp_set_player__(xmp_context opaque, int parm, int val)
+int xmp_set_player(xmp_context opaque, int parm, int val)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct player_data *p = &ctx->p;
@@ -405,30 +385,7 @@ int xmp_set_player__(xmp_context opaque, int parm, int val)
 	return ret;
 }
 
-#ifdef USE_VERSIONED_SYMBOLS
-/*
-EXPORT extern int xmp_get_player_v40__(xmp_context, int);
-EXPORT extern int xmp_get_player_v41__(xmp_context, int)
-	__attribute__((alias("xmp_get_player_v40__")));
-EXPORT extern int xmp_get_player_v42__(xmp_context, int)
-	__attribute__((alias("xmp_get_player_v40__")));
-EXPORT extern int xmp_get_player_v43__(xmp_context, int)
-	__attribute__((alias("xmp_get_player_v40__")));
-EXPORT extern int xmp_get_player_v44__(xmp_context, int)
-	__attribute__((alias("xmp_get_player_v40__")));
-
-asm(".symver xmp_get_player_v40__, xmp_get_player@XMP_4.0");
-asm(".symver xmp_get_player_v41__, xmp_get_player@XMP_4.1");
-asm(".symver xmp_get_player_v42__, xmp_get_player@XMP_4.2");
-asm(".symver xmp_get_player_v43__, xmp_get_player@XMP_4.3");
-asm(".symver xmp_get_player_v44__, xmp_get_player@@XMP_4.4");
-*/
-#define xmp_get_player__ xmp_get_player_v40__
-#else
-#define xmp_get_player__ xmp_get_player
-#endif
-
-int xmp_get_player__(xmp_context opaque, int parm)
+int xmp_get_player(xmp_context opaque, int parm)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct player_data *p = &ctx->p;
