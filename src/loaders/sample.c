@@ -195,21 +195,21 @@ static void unroll_loop(struct xmp_sample *xxs)
 }
 
 
-int libxmp_load_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, int flags, struct xmp_sample *xxs, const void *buffer)
+void libxmp_load_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, int flags, struct xmp_sample *xxs, const void *buffer)
 {
 	int bytelen, extralen, unroll_extralen, i;
 
 #ifndef LIBXMP_CORE_PLAYER
 	/* Adlib FM patches */
 	if (flags & SAMPLE_FLAG_ADLIB) {
-		return 0;
+		return;
 	}
 #endif
 
 	/* Empty or invalid samples
 	 */
 	if (xxs->len <= 0) {
-		return 0;
+		return;
 	}
 
 	/* Skip sample loading
@@ -221,7 +221,7 @@ int libxmp_load_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, i
 		if (~flags & SAMPLE_FLAG_NOLOAD) {
 			libxmp_bytes_seek(buf, xxs->len, SEEK_CUR);
 		}
-		return 0;
+		return;
 	}
 
 	/* Loop parameters sanity check
@@ -396,6 +396,4 @@ int libxmp_load_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, i
 			}
 		}
 	}
-
-	return 0;
 }

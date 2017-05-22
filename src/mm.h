@@ -18,11 +18,11 @@ typedef struct libxmp_mm__ {
 
 LIBXMP_MM	libxmp_mm_new		(void);
 void		libxmp_mm_release	(LIBXMP_MM);
-void		libxmp_mm_throw	(LIBXMP_MM, int, char *, ...);
+void		libxmp_mm_throw		(LIBXMP_MM, int, char *, ...);
 void		*libxmp_mm_calloc	(LIBXMP_MM, size_t);
 void		*libxmp_mm_alloc	(LIBXMP_MM, size_t);
 void		*libxmp_mm_realloc	(LIBXMP_MM, void *, size_t);
 void		libxmp_mm_free		(LIBXMP_MM, void *);
-void		libxmp_mm_clear	(LIBXMP_MM);
+void		libxmp_mm_clear		(LIBXMP_MM);
 
 #endif

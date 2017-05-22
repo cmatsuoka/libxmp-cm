@@ -46,7 +46,7 @@ void	libxmp_disable_continue_fx	(struct xmp_event *);
 int	libxmp_check_filename_case	(char *, char *, char *, int);
 void	libxmp_get_instrument_path	(struct module_data *, char *, int);
 void	libxmp_set_type			(struct module_data *, const char *, ...);
-int	libxmp_load_sample		(LIBXMP_MM, LIBXMP_BYTES, struct module_data *, int,
+void	libxmp_load_sample		(LIBXMP_MM, LIBXMP_BYTES, struct module_data *, int,
 					 struct xmp_sample *, const void *);
 
 extern uint8		libxmp_ord_xlat[];

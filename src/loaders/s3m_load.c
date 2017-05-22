@@ -538,10 +538,7 @@ static int s3m_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, cons
 			sub->vol = sah.vol;
 			libxmp_c2spd_to_note(sah.c2spd, &sub->xpo, &sub->fin);
 			sub->xpo += 12;
-			ret = libxmp_load_sample(mem, buf, m, SAMPLE_FLAG_ADLIB, xxs, (char *)&sah.reg);
-			if (ret < 0) {
-				return -1;
-			}
+			libxmp_load_sample(mem, buf, m, SAMPLE_FLAG_ADLIB, xxs, (char *)&sah.reg);
 
 			D_(D_INFO "[%2X] %-28.28s", i, xxi->name);
 
@@ -614,13 +611,8 @@ static int s3m_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, cons
 		   xxs->flg & XMP_SAMPLE_LOOP ? 'L' : ' ', sub->vol, sih.c2spd);
 
 		libxmp_c2spd_to_note(sih.c2spd, &sub->xpo, &sub->fin);
-
 		libxmp_bytes_seek(buf, start + 16L * sih.memseg, SEEK_SET);
-
-		ret = libxmp_load_sample(mem, buf, m, sfh.ffi == 1 ? 0 : SAMPLE_FLAG_UNS, xxs, NULL);
-		if (ret < 0) {
-			return -1;
-		}
+		libxmp_load_sample(mem, buf, m, sfh.ffi == 1 ? 0 : SAMPLE_FLAG_UNS, xxs, NULL);
 	}
 
 	m->quirk |= QUIRKS_ST3 | QUIRK_ARPMEM;

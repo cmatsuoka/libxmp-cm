@@ -544,9 +544,7 @@ static int load_instruments(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data 
 #endif
 
 			if (version > 0x0103) {
-				if (libxmp_load_sample(mem, buf, m, flags, &mod->xxs[sub->sid], NULL) < 0) {
-					return -1;
-				}
+				libxmp_load_sample(mem, buf, m, flags, &mod->xxs[sub->sid], NULL);
 			}
 		}
 	}
@@ -698,9 +696,7 @@ static int xm_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const
 		for (i = 0; i < mod->ins; i++) {
 			for (j = 0; j < mod->xxi[i].nsm; j++) {
 				int sid = mod->xxi[i].sub[j].sid;
-				if (libxmp_load_sample(mem, buf, m, SAMPLE_FLAG_DIFF, &mod->xxs[sid], NULL) < 0) {
-					return -1;
-				}
+				libxmp_load_sample(mem, buf, m, SAMPLE_FLAG_DIFF, &mod->xxs[sid], NULL);
 			}
 		}
 	}
