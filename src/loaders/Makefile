@@ -1,5 +1,5 @@
 
-LOADERS = xm_load.o s3m_load.o
+LOADERS = xm_load.o mod_load.o s3m_load.o
 
 OLDLOADERS	= xm_load.o mod_load.o s3m_load.o stm_load.o 669_load.o far_load.o \
 	  mtm_load.o ptm_load.o okt_load.o ult_load.o mdl_load.o it_load.o \

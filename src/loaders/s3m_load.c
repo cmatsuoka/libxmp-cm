@@ -79,8 +79,8 @@
 #define MAGIC_SCRI	MAGIC4('S','C','R','I')
 #define MAGIC_SCRS	MAGIC4('S','C','R','S')
 
-static int s3m_test(LIBXMP_MEM , LIBXMP_BUFFER , char *, const int);
-static int s3m_load(LIBXMP_MEM , LIBXMP_BUFFER , struct module_data *, const int);
+static int s3m_test(LIBXMP_MEM, LIBXMP_BUFFER, char *, const int);
+static int s3m_load(LIBXMP_MEM, LIBXMP_BUFFER, struct module_data *, const int);
 
 const struct format_loader libxmp_loader_s3m = {
 	"Scream Tracker 3",
