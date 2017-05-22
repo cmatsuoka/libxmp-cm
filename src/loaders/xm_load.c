@@ -36,8 +36,8 @@
 #include "loader.h"
 #include "xm.h"
 
-static int xm_test(LIBXMP_MEM , LIBXMP_BUFFER , char *, const int);
-static int xm_load(LIBXMP_MEM , LIBXMP_BUFFER , struct module_data *, const int);
+static int xm_test(LIBXMP_MM , LIBXMP_BYTES , char *, const int);
+static int xm_load(LIBXMP_MM , LIBXMP_BYTES , struct module_data *, const int);
 
 const struct format_loader libxmp_loader_xm = {
 	"Fast Tracker II",
@@ -45,11 +45,11 @@ const struct format_loader libxmp_loader_xm = {
 	xm_load
 };
 
-static int xm_test(LIBXMP_MEM mem, LIBXMP_BUFFER buf, char *t, const int start)
+static int xm_test(LIBXMP_MM mem, LIBXMP_BYTES buf, char *t, const int start)
 {
 	char b[20];
 
-	libxmp_buffer_read(buf, b, 17);		/* ID text */
+	libxmp_bytes_read(buf, b, 17);		/* ID text */
 
 	if (memcmp(b, "Extended Module: ", 17)) {
 		return -1;
@@ -60,7 +60,7 @@ static int xm_test(LIBXMP_MEM mem, LIBXMP_BUFFER buf, char *t, const int start)
 	return 0;
 }
 
-static int load_xm_pattern(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, int num, int version)
+static int load_xm_pattern(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, int num, int version)
 {
 	const int headsize = version > 0x0102 ? 9 : 8;
 	struct xmp_module *mod = &m->mod;
@@ -70,17 +70,17 @@ static int load_xm_pattern(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data
 	int j, r;
 	int size;
 
-	xph.length = libxmp_buffer_read32l(buf);
-	xph.packing = libxmp_buffer_read8(buf);
-	xph.rows = version > 0x0102 ? libxmp_buffer_read16l(buf) : libxmp_buffer_read8(buf) + 1;
+	xph.length = libxmp_bytes_read32l(buf);
+	xph.packing = libxmp_bytes_read8(buf);
+	xph.rows = version > 0x0102 ? libxmp_bytes_read16l(buf) : libxmp_bytes_read8(buf) + 1;
 
 	/* Sanity check */
 	if (xph.rows > 256) {
 		return -1;
 	}
 
-	xph.datasize = libxmp_buffer_read16l(buf);
-	libxmp_buffer_seek(buf, xph.length - headsize, SEEK_CUR);
+	xph.datasize = libxmp_bytes_read16l(buf);
+	libxmp_bytes_seek(buf, xph.length - headsize, SEEK_CUR);
 
 	r = xph.rows;
 	if (r == 0) {
@@ -95,9 +95,9 @@ static int load_xm_pattern(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data
 
 	size = xph.datasize;
 
-	pat = patbuf = libxmp_mem_calloc(mem, size);
+	pat = patbuf = libxmp_mm_calloc(mem, size);
 
-	libxmp_buffer_read(buf, patbuf, size);
+	libxmp_bytes_read(buf, patbuf, size);
 
 	for (j = 0; j < (mod->chn * r); j++) {
 
@@ -284,7 +284,7 @@ static int load_xm_pattern(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data
 	return 0;
 }
 
-static int load_patterns(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, int version)
+static int load_patterns(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, int version)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j;
@@ -321,7 +321,7 @@ static int load_patterns(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *
 #define XM_INST_HEADER_SIZE 33
 #define XM_INST_SIZE 208
 
-static int load_instruments(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, int version)
+static int load_instruments(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, int version)
 {
 	struct xmp_module *mod = &m->mod;
 	struct xm_instrument_header xih;
@@ -345,12 +345,12 @@ static int load_instruments(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_dat
 		 * XMLiTE stripped modules and truncated files. This test will not
 		 * work if file has trailing garbage.
 		 */
-		if (libxmp_buffer_left(buf) < 33) {
+		if (libxmp_bytes_left(buf) < 33) {
 			D_(D_WARN "short read in instrument header data");
 			break;
 		}
 
-		libxmp_buffer_scan(buf, "d32l;s22;b8;w16l;d32l",
+		libxmp_bytes_scan(buf, "d32l;s22;b8;w16l;d32l",
 			&xih.size,		/* Instrument size */
 			&xih.name,		/* Instrument name */
 			&xih.type,		/* Instrument type (always 0) */
@@ -385,7 +385,7 @@ static int load_instruments(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_dat
 			 * generalization should take care of both cases.
 			 */
 
-			libxmp_buffer_seek(buf, (int)xih.size - XM_INST_HEADER_SIZE, SEEK_CUR);
+			libxmp_bytes_seek(buf, (int)xih.size - XM_INST_HEADER_SIZE, SEEK_CUR);
 
 			continue;
 		}
@@ -402,19 +402,19 @@ static int load_instruments(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_dat
 		 */
 		if (xih.size < XM_INST_HEADER_SIZE + XM_INST_SIZE) {
 			memset(&xi, 0, sizeof(struct xm_instrument));
-			libxmp_buffer_seek(buf, xih.size - XM_INST_HEADER_SIZE, SEEK_CUR);
+			libxmp_bytes_seek(buf, xih.size - XM_INST_HEADER_SIZE, SEEK_CUR);
 		} else {
-			libxmp_buffer_read(buf, xi.sample, 96);
+			libxmp_bytes_read(buf, xi.sample, 96);
 
 			for (j = 0; j < 24; j++) {
-				xi.v_env[j] = libxmp_buffer_read16l(buf);	/* Points for volume envelope */
+				xi.v_env[j] = libxmp_bytes_read16l(buf);	/* Points for volume envelope */
 			}
 
 			for (j = 0; j < 24; j++) {
-				xi.p_env[j] = libxmp_buffer_read16l(buf);	/* Points for pan envelope */
+				xi.p_env[j] = libxmp_bytes_read16l(buf);	/* Points for pan envelope */
 			}
 
-			libxmp_buffer_scan(buf, "b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;w16l",
+			libxmp_bytes_scan(buf, "b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;b8;w16l",
 				&xi.v_pts,	/* Number of volume points */
 				&xi.p_pts,	/* Number of pan points */
 				&xi.v_sus,	/* Volume sustain point */
@@ -432,7 +432,7 @@ static int load_instruments(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_dat
 				&xi.v_fade);	/* Volume fadeout */
 
 			/* Skip reserved space */
-			libxmp_buffer_seek(buf, (int)xih.size - (XM_INST_HEADER_SIZE + XM_INST_SIZE), SEEK_CUR);
+			libxmp_bytes_seek(buf, (int)xih.size - (XM_INST_HEADER_SIZE + XM_INST_SIZE), SEEK_CUR);
 
 			/* Envelope */
 			xxi->rls = xi.v_fade << 1;
@@ -477,7 +477,7 @@ static int load_instruments(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_dat
 			}
 			xxs = &mod->xxs[sample_num];
 
-			libxmp_buffer_scan(buf, "d32l;d32l;d32l;b8;b8;b8;b8;b8;b8;s22",
+			libxmp_bytes_scan(buf, "d32l;d32l;d32l;b8;b8;b8;b8;b8;b8;s22",
 				&xsh[j].length,		/* Sample length */
 				&xsh[j].loop_start,	/* Sample loop start */
 				&xsh[j].loop_length,	/* Sample loop length */
@@ -560,7 +560,7 @@ static int load_instruments(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_dat
 	return 0;
 }
 
-static int xm_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, const int start)
+static int xm_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const int start)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j;
@@ -570,7 +570,7 @@ static int xm_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, con
 
 	LOAD_INIT();
 
-	libxmp_buffer_scan(buf, "s17;s20;b8;s20;w16l;d32l;w16l;w16l;w16l;w16l;w16l;w16l;w16l;w16l",
+	libxmp_bytes_scan(buf, "s17;s20;b8;s20;w16l;d32l;w16l;w16l;w16l;w16l;w16l;w16l;w16l;w16l",
 		&xfh.id,		/* ID text */
 		&xfh.name,		/* Module name */
 		NULL,			/* skip 0x1a */
@@ -611,7 +611,7 @@ static int xm_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, con
 		return -1;
 	}
 
-	libxmp_buffer_read(buf, &xfh.order, len);	/* Pattern order table */
+	libxmp_bytes_read(buf, &xfh.order, len);	/* Pattern order table */
 
 	strncpy(mod->name, (char *)xfh.name, 20);
 
@@ -672,7 +672,7 @@ static int xm_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, con
 	MODULE_INFO();
 
 	/* Honor header size */
-	libxmp_buffer_seek(buf, start + xfh.headersz + 60, SEEK_SET);
+	libxmp_bytes_seek(buf, start + xfh.headersz + 60, SEEK_SET);
 
 	/* XM 1.02/1.03 has a different patterns and instruments order */
 	if (xfh.version <= 0x0103) {

@@ -89,7 +89,7 @@ int libxmp_virt_on(struct context_data *ctx, int num)
 {
 	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
-	LIBXMP_MEM mem = p->mem;
+	LIBXMP_MM mem = p->mem;
 	int i;
 
 	p->virt.num_tracks = num;
@@ -104,7 +104,7 @@ int libxmp_virt_on(struct context_data *ctx, int num)
 	}
 
 	p->virt.maxvoc = libxmp_mixer_numvoices(ctx, num);
-	p->virt.voice_array = libxmp_mem_calloc(mem, p->virt.maxvoc * sizeof(struct mixer_voice));
+	p->virt.voice_array = libxmp_mm_calloc(mem, p->virt.maxvoc * sizeof(struct mixer_voice));
 
 	for (i = 0; i < p->virt.maxvoc; i++) {
 		p->virt.voice_array[i].chn = FREE;
@@ -115,13 +115,13 @@ int libxmp_virt_on(struct context_data *ctx, int num)
 	/* Initialize Paula simulator */
 	if (IS_AMIGA_MOD()) {
 		for (i = 0; i < p->virt.maxvoc; i++) {
-			p->virt.voice_array[i].paula = libxmp_mem_calloc(mem, sizeof (struct paula_state));
+			p->virt.voice_array[i].paula = libxmp_mm_calloc(mem, sizeof (struct paula_state));
 			libxmp_paula_init(ctx, p->virt.voice_array[i].paula);
 		}
 	}
 #endif
 
-	p->virt.virt_channel = libxmp_mem_alloc(mem, p->virt.virt_channels * sizeof(struct virt_channel));
+	p->virt.virt_channel = libxmp_mm_alloc(mem, p->virt.virt_channels * sizeof(struct virt_channel));
 
 	for (i = 0; i < p->virt.virt_channels; i++) {
 		p->virt.virt_channel[i].map = FREE;

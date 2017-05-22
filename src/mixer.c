@@ -795,10 +795,10 @@ void libxmp_mixer_on(struct context_data *ctx, int rate, int format, int c4rate)
 {
 	struct mixer_data *s = &ctx->s;
 	struct player_data *p = &ctx->p;
-	LIBXMP_MEM mem = p->mem;
+	LIBXMP_MM mem = p->mem;
 
-	s->buffer = libxmp_mem_calloc(mem, 2 * XMP_MAX_FRAMESIZE);
-	s->buf32 = libxmp_mem_calloc(mem, sizeof(int) * XMP_MAX_FRAMESIZE);
+	s->buffer = libxmp_mm_calloc(mem, 2 * XMP_MAX_FRAMESIZE);
+	s->buf32 = libxmp_mm_calloc(mem, sizeof(int) * XMP_MAX_FRAMESIZE);
 	s->freq = rate;
 	s->format = format;
 	s->amplify = DEFAULT_AMPLIFY;

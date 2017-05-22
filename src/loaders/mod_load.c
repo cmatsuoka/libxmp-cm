@@ -84,8 +84,8 @@ const struct mod_magic mod_magic[] = {
 	{"", 0}
 };
 
-static int mod_test(LIBXMP_MEM, LIBXMP_BUFFER, char *, const int);
-static int mod_load(LIBXMP_MEM, LIBXMP_BUFFER, struct module_data *, const int);
+static int mod_test(LIBXMP_MM, LIBXMP_BYTES, char *, const int);
+static int mod_load(LIBXMP_MM, LIBXMP_BYTES, struct module_data *, const int);
 
 const struct format_loader libxmp_loader_mod = {
 	"Amiga Protracker/Compatible",
@@ -110,7 +110,7 @@ static int validate_pattern(uint8 * buf)
 	return 0;
 }
 
-static int mod_test(LIBXMP_MEM mem, LIBXMP_BUFFER buf, char *t, const int start)
+static int mod_test(LIBXMP_MM mem, LIBXMP_BYTES buf, char *t, const int start)
 {
 	int i;
 	char magic[4];
@@ -119,8 +119,8 @@ static int mod_test(LIBXMP_MEM mem, LIBXMP_BUFFER buf, char *t, const int start)
 	long size;
 	int count;
 
-	libxmp_buffer_seek(buf, start + 1080, SEEK_SET);
-	libxmp_buffer_read(buf, magic, 4);
+	libxmp_bytes_seek(buf, start + 1080, SEEK_SET);
+	libxmp_bytes_read(buf, magic, 4);
 
 	/* Check xxCH */
 	if (!strncmp(magic + 2, "CH", 2) && isdigit((int)magic[0])
@@ -150,25 +150,25 @@ static int mod_test(LIBXMP_MEM mem, LIBXMP_BUFFER buf, char *t, const int start)
 	 * Sanity check to prevent loading NoiseRunner and other module
 	 * formats with valid magic at offset 1080
 	 */
-	libxmp_buffer_seek(buf, start + 20, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 20, SEEK_SET);
 	for (i = 0; i < 31; i++) {
 		uint8 x;
 
-		libxmp_buffer_seek(buf, 22, SEEK_CUR);	/* Instrument name */
+		libxmp_bytes_seek(buf, 22, SEEK_CUR);	/* Instrument name */
 
 		/* OpenMPT can create mods with large samples */
-		libxmp_buffer_read16b(buf);	/* sample size */
+		libxmp_bytes_read16b(buf);	/* sample size */
 
 		/* Chris Spiegel tells me that sandman.mod has 0x20 in finetune */
-		x = libxmp_buffer_read8(buf);
+		x = libxmp_bytes_read8(buf);
 		if (x & 0xf0 && x != 0x20) {	/* test finetune */
 			return -1;
 		}
-		if (libxmp_buffer_read8(buf) > 0x40) {	/* test volume */
+		if (libxmp_bytes_read8(buf) > 0x40) {	/* test volume */
 			return -1;
 		}
-		libxmp_buffer_read16b(buf);	/* loop start */
-		libxmp_buffer_read16b(buf);	/* loop size */
+		libxmp_bytes_read16b(buf);	/* loop start */
+		libxmp_bytes_read16b(buf);	/* loop size */
 	}
 
 	/* Test for UNIC tracker modules
@@ -181,22 +181,22 @@ static int mod_test(LIBXMP_MEM mem, LIBXMP_BUFFER buf, char *t, const int start)
 	 */
 
 	/* get file size */
-	size = libxmp_buffer_size(buf);
+	size = libxmp_bytes_size(buf);
 	smp_size = 0;
-	libxmp_buffer_seek(buf, start + 20, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 20, SEEK_SET);
 
 	/* get samples size */
 	for (i = 0; i < 31; i++) {
-		libxmp_buffer_seek(buf, 22, SEEK_CUR);
-		smp_size += 2 * libxmp_buffer_read16b(buf);	/* Length in 16-bit words */
-		libxmp_buffer_seek(buf, 6, SEEK_CUR);
+		libxmp_bytes_seek(buf, 22, SEEK_CUR);
+		smp_size += 2 * libxmp_bytes_read16b(buf);	/* Length in 16-bit words */
+		libxmp_bytes_seek(buf, 6, SEEK_CUR);
 	}
 
 	/* get number of patterns */
 	num_pat = 0;
-	libxmp_buffer_seek(buf, start + 952, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 952, SEEK_SET);
 	for (i = 0; i < 128; i++) {
-		uint8 x = libxmp_buffer_read8(buf);
+		uint8 x = libxmp_bytes_read8(buf);
 		if (x > 0x7f) {
 			break;
 		}
@@ -214,8 +214,8 @@ static int mod_test(LIBXMP_MEM mem, LIBXMP_BUFFER buf, char *t, const int start)
 
 	/* validate pattern data in an attempt to catch UNICs with MOD size */
 	for (count = i = 0; i < num_pat; i++) {
-		libxmp_buffer_seek(buf, start + 1084 + 1024 * i, SEEK_SET);
-		libxmp_buffer_read(buf, pat_buf, 1024);
+		libxmp_bytes_seek(buf, start + 1084 + 1024 * i, SEEK_SET);
+		libxmp_bytes_read(buf, pat_buf, 1024);
 		if (validate_pattern(pat_buf) < 0) {
 			D_(D_WARN "pattern %d: error in pattern data", i);
 			/* Allow a few errors, "lexstacy" has 0x52 */
@@ -227,7 +227,7 @@ static int mod_test(LIBXMP_MEM mem, LIBXMP_BUFFER buf, char *t, const int start)
 	}
 
 found:
-	libxmp_buffer_seek(buf, start + 0, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 0, SEEK_SET);
 	libxmp_read_title(buf, t, 20);
 
 	return 0;
@@ -385,7 +385,7 @@ static int get_tracker_id(struct module_data *m, struct mod_header *mh, int id)
 	return id;
 }
 
-static int mod_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, const int start)
+static int mod_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const int start)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j;
@@ -410,9 +410,9 @@ static int mod_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 
 	m->period_type = PERIOD_MODRNG;
 
-	libxmp_buffer_read(buf, &mh.name, 20);
+	libxmp_bytes_read(buf, &mh.name, 20);
 	for (i = 0; i < 31; i++) {
-		libxmp_buffer_scan(buf, "s22;w16b;b8;b8;w16b;w16b", &mh.ins[i].name,	/* Instrument name */
+		libxmp_bytes_scan(buf, "s22;w16b;b8;b8;w16b;w16b", &mh.ins[i].name,	/* Instrument name */
 				   &mh.ins[i].size,	/* Length in 16-bit words */
 				   &mh.ins[i].finetune,	/* Finetune (signed nibble) */
 				   &mh.ins[i].volume,	/* Linear playback volume */
@@ -424,7 +424,7 @@ static int mod_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 
 	memset(magic, 0, 8);
 
-	libxmp_buffer_scan(buf, "b8;b8;s128;s4", &mh.len, &mh.restart, &mh.order, &magic);
+	libxmp_bytes_scan(buf, "b8;b8;s128;s4", &mh.len, &mh.restart, &mh.order, &magic);
 
 	for (i = 0; mod_magic[i].ch; i++) {
 		if (!(strncmp(magic, mod_magic[i].magic, 4))) {
@@ -524,10 +524,10 @@ static int mod_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 	 */
 
 	if (0x43c + mod->pat * 4 * mod->chn * 0x40 + smp_size < m->size) {
-		int pos = libxmp_buffer_tell(buf);
-		libxmp_buffer_seek(buf, start + 0x43c + mod->pat * 4 * mod->chn * 0x40 + smp_size, SEEK_SET);
-		libxmp_buffer_read(buf, idbuffer, 4);
-		libxmp_buffer_seek(buf, start + pos, SEEK_SET);
+		int pos = libxmp_bytes_tell(buf);
+		libxmp_bytes_seek(buf, start + 0x43c + mod->pat * 4 * mod->chn * 0x40 + smp_size, SEEK_SET);
+		libxmp_bytes_read(buf, idbuffer, 4);
+		libxmp_bytes_seek(buf, start + pos, SEEK_SET);
 
 		if (!memcmp(idbuffer, "FLEX", 4)) {
 			tracker_id = TRACKER_FLEXTRAX;
@@ -579,13 +579,13 @@ skip_test:
 
 		libxmp_alloc_pattern_tracks(mem, mod, i, 64);
 
-		pos = libxmp_buffer_tell(buf);
+		pos = libxmp_bytes_tell(buf);
 
 		for (j = 0; j < (64 * mod->chn); j++) {
 			int period;
 
 			event = &EVENT(i, j % mod->chn, j / mod->chn);
-			libxmp_buffer_read(buf, mod_event, 4);
+			libxmp_bytes_read(buf, mod_event, 4);
 
 			period = ((int)(LSN(mod_event[0])) << 8) | mod_event[1];
 			if (period != 0 && (period < 108 || period > 907)) {
@@ -618,11 +618,11 @@ skip_test:
 			}
 		}
 
-		libxmp_buffer_seek(buf, pos, SEEK_SET);
+		libxmp_bytes_seek(buf, pos, SEEK_SET);
 
 		for (j = 0; j < (64 * mod->chn); j++) {
 			event = &EVENT(i, j % mod->chn, j / mod->chn);
-			libxmp_buffer_read(buf, mod_event, 4);
+			libxmp_bytes_read(buf, mod_event, 4);
 
 			switch (tracker_id) {
 			case TRACKER_PROBABLY_NOISETRACKER:
@@ -719,12 +719,12 @@ skip_test:
 
 		flags = (ptkloop && mod->xxs[i].lps == 0) ? SAMPLE_FLAG_FULLREP : 0;
 
-		libxmp_buffer_read(buf, data, 5);
+		libxmp_bytes_read(buf, data, 5);
 
 		if (!memcmp(data, "ADPCM", 5)) {
 			flags |= SAMPLE_FLAG_ADPCM;
 		} else {
-			libxmp_buffer_seek(buf, -5, SEEK_CUR);
+			libxmp_bytes_seek(buf, -5, SEEK_CUR);
 		}
 
 		libxmp_load_sample(mem, buf, m, flags, &mod->xxs[i], NULL);

@@ -47,7 +47,7 @@
 #ifndef LIBXMP_CORE_PLAYER
 #include "extras.h"
 #endif
-#include "mem.h"
+#include "mm.h"
 
 /* Values for multi-retrig */
 static const struct retrig_control rval[] = {
@@ -1473,11 +1473,11 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
 	struct flow_control *f = &p->flow;
-	LIBXMP_MEM mem = p->mem;
+	LIBXMP_MM mem = p->mem;
 	int i;
 
-	if ((libxmp_mem_catch(mem)) != 0) {
-		D_(D_CRIT "player exception: %s", libxmp_mem_error(mem));
+	if ((libxmp_mm_catch(mem)) != 0) {
+		D_(D_CRIT "player exception: %s", libxmp_mm_error(mem));
 		return -XMP_ERROR_SYSTEM;
 	}
 
@@ -1542,8 +1542,8 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 	f->pbreak = 0;
 	f->rowdelay_set = 0;
 
-	f->loop = libxmp_mem_calloc(mem, p->virt.virt_channels * sizeof(struct pattern_loop));
-	p->xc_data = libxmp_mem_calloc(mem, p->virt.virt_channels * sizeof(struct channel_data));
+	f->loop = libxmp_mm_calloc(mem, p->virt.virt_channels * sizeof(struct pattern_loop));
+	p->xc_data = libxmp_mm_calloc(mem, p->virt.virt_channels * sizeof(struct channel_data));
 
 #ifndef LIBXMP_CORE_PLAYER
 	for (i = 0; i < p->virt.virt_channels; i++) {
@@ -1751,7 +1751,7 @@ void xmp_end_player(xmp_context opaque)
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct player_data *p = &ctx->p;
 	struct flow_control *f = &p->flow;
-	LIBXMP_MEM mem = p->mem;
+	LIBXMP_MM mem = p->mem;
 
 	if (ctx->state < XMP_STATE_PLAYING)
 		return;
@@ -1759,7 +1759,7 @@ void xmp_end_player(xmp_context opaque)
 	ctx->state = XMP_STATE_LOADED;
 
 	libxmp_virt_off(ctx);
-	libxmp_mem_clear(mem);
+	libxmp_mm_clear(mem);
 
 	p->xc_data = NULL;
 	f->loop = NULL;

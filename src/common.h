@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "types.h"
-#include "mem.h"
+#include "mm.h"
 #include "xmp.h"
 
 #if (defined(__GNUC__) || defined(__clang__)) && defined(XMP_SYM_VISIBILITY)
@@ -161,7 +161,7 @@ struct extra_sample_data {
 
 struct module_data {
 	struct xmp_module mod;
-	LIBXMP_MEM mem;
+	LIBXMP_MM mem;
 
 	char *comment;			/* Comments, if any */
 	uint8 md5[16];			/* MD5 message digest */
@@ -201,7 +201,7 @@ struct module_data {
 
 
 struct player_data {
-	LIBXMP_MEM mem;
+	LIBXMP_MM mem;
 
 	int ord;
 	int pos;

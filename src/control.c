@@ -43,12 +43,12 @@ xmp_context xmp_create_context()
 	}
 
 	/* player memory */
-	if ((ctx->p.mem = libxmp_mem_new()) == NULL) {
+	if ((ctx->p.mem = libxmp_mm_new()) == NULL) {
 		goto err2;
 	}
 
 	/* module memory */
-	if ((ctx->m.mem = libxmp_mem_new()) == NULL) {
+	if ((ctx->m.mem = libxmp_mm_new()) == NULL) {
 		goto err2;
 	}
 
@@ -72,8 +72,8 @@ void xmp_free_context(xmp_context opaque)
 		xmp_release_module(opaque);
 	}
 
-	libxmp_mem_release(ctx->m.mem);
-	libxmp_mem_release(ctx->p.mem);
+	libxmp_mm_release(ctx->m.mem);
+	libxmp_mm_release(ctx->p.mem);
 	free(opaque);
 }
 

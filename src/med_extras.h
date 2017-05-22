@@ -1,7 +1,7 @@
 #ifndef LIBXMP_MED_EXTRAS_H
 #define LIBXMP_MED_EXTRAS_H
 
-#include "mem.h"
+#include "mm.h"
 
 #define MED_EXTRAS_MAGIC 0x7f20ca5
 
@@ -66,11 +66,11 @@ int  libxmp_med_change_period(struct context_data *, struct channel_data *);
 int  libxmp_med_linear_bend(struct context_data *, struct channel_data *);
 int  libxmp_med_get_vibrato(struct channel_data *);
 void libxmp_med_play_extras(struct context_data *, struct channel_data *, int);
-void libxmp_med_new_instrument_extras(LIBXMP_MEM, struct xmp_instrument *);
-void libxmp_med_new_channel_extras(LIBXMP_MEM, struct channel_data *);
+void libxmp_med_new_instrument_extras(LIBXMP_MM, struct xmp_instrument *);
+void libxmp_med_new_channel_extras(LIBXMP_MM, struct channel_data *);
 void libxmp_med_reset_channel_extras(struct channel_data *);
-void libxmp_med_new_module_extras(LIBXMP_MEM, struct module_data *);
-void libxmp_med_release_module_extras(LIBXMP_MEM, struct module_data *);
+void libxmp_med_new_module_extras(LIBXMP_MM, struct module_data *);
+void libxmp_med_release_module_extras(LIBXMP_MM, struct module_data *);
 void libxmp_med_extras_process_fx(struct context_data *, struct channel_data *, int, uint8, uint8, uint8, int);
 
 #endif

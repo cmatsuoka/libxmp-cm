@@ -79,8 +79,8 @@
 #define MAGIC_SCRI	MAGIC4('S','C','R','I')
 #define MAGIC_SCRS	MAGIC4('S','C','R','S')
 
-static int s3m_test(LIBXMP_MEM, LIBXMP_BUFFER, char *, const int);
-static int s3m_load(LIBXMP_MEM, LIBXMP_BUFFER, struct module_data *, const int);
+static int s3m_test(LIBXMP_MM, LIBXMP_BYTES, char *, const int);
+static int s3m_load(LIBXMP_MM, LIBXMP_BYTES, struct module_data *, const int);
 
 const struct format_loader libxmp_loader_s3m = {
 	"Scream Tracker 3",
@@ -88,19 +88,19 @@ const struct format_loader libxmp_loader_s3m = {
 	s3m_load
 };
 
-static int s3m_test(LIBXMP_MEM mem, LIBXMP_BUFFER buf, char *t, const int start)
+static int s3m_test(LIBXMP_MM mem, LIBXMP_BYTES buf, char *t, const int start)
 {
-	libxmp_buffer_seek(buf, start + 44, SEEK_SET);
-	if (libxmp_buffer_read32b(buf) != MAGIC_SCRM) {
+	libxmp_bytes_seek(buf, start + 44, SEEK_SET);
+	if (libxmp_bytes_read32b(buf) != MAGIC_SCRM) {
 		return -1;
 	}
 
-	libxmp_buffer_seek(buf, start + 29, SEEK_SET);
-	if (libxmp_buffer_read8(buf) != 0x10) {
+	libxmp_bytes_seek(buf, start + 29, SEEK_SET);
+	if (libxmp_bytes_read8(buf) != 0x10) {
 		return -1;
 	}
 
-	libxmp_buffer_seek(buf, start + 0, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 0, SEEK_SET);
 	libxmp_read_title(buf, t, 28);
 
 	return 0;
@@ -224,7 +224,7 @@ static void xlat_fx(int c, struct xmp_event *e)
 	}
 }
 
-static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, const int start)
+static int s3m_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const int start)
 {
 	struct xmp_module *mod = &m->mod;
 	int c, r, i;
@@ -244,7 +244,7 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 
 	LOAD_INIT();
 
-	libxmp_buffer_scan(buf, "s28;b8;b8;w16l;w16l;w16l;w16l;w16l;w16l;w16l;d32b;b8;b8;b8;b8;b8;b8;d32l;d32l;w16l;s32",
+	libxmp_bytes_scan(buf, "s28;b8;b8;w16l;w16l;w16l;w16l;w16l;w16l;w16l;d32b;b8;b8;b8;b8;b8;b8;d32l;d32l;w16l;s32",
 		&sfh.name,	/* Song name */
 		NULL,		/* 0x1a */
 		&sfh.type,	/* File type */
@@ -294,8 +294,8 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 
 	libxmp_copy_adjust(mod->name, sfh.name, 28);
 
-	pp_ins = libxmp_mem_calloc(mem, 2 * sfh.insnum);
-	pp_pat = libxmp_mem_calloc(mem, 2 * sfh.patnum);
+	pp_ins = libxmp_mm_calloc(mem, 2 * sfh.insnum);
+	pp_pat = libxmp_mm_calloc(mem, 2 * sfh.patnum);
 
 	if (sfh.flags & S3M_AMIGA_RANGE) {
 		m->period_type = PERIOD_MODRNG;
@@ -325,11 +325,11 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 
 	if (sfh.ordnum <= XMP_MAX_MOD_LENGTH) {
 		mod->len = sfh.ordnum;
-		libxmp_buffer_read(buf, mod->xxo, mod->len);
+		libxmp_bytes_read(buf, mod->xxo, mod->len);
 	} else {
 		mod->len = XMP_MAX_MOD_LENGTH;
-		libxmp_buffer_read(buf, mod->xxo, mod->len);
-		libxmp_buffer_seek(buf, sfh.ordnum - XMP_MAX_MOD_LENGTH, SEEK_CUR);
+		libxmp_bytes_read(buf, mod->xxo, mod->len);
+		libxmp_bytes_seek(buf, sfh.ordnum - XMP_MAX_MOD_LENGTH, SEEK_CUR);
 	}
 
 	/* Don't trust sfh.patnum */
@@ -353,17 +353,17 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 	mod->smp = mod->ins;
 
 	for (i = 0; i < sfh.insnum; i++) {
-		pp_ins[i] = libxmp_buffer_read16l(buf);
+		pp_ins[i] = libxmp_bytes_read16l(buf);
 	}
 
 	for (i = 0; i < sfh.patnum; i++) {
-		pp_pat[i] = libxmp_buffer_read16l(buf);
+		pp_pat[i] = libxmp_bytes_read16l(buf);
 	}
 
 	/* Default pan positions */
 
 	for (i = 0, sfh.dp -= 0xfc; !sfh.dp /* && n */  && (i < 32); i++) {
-		uint8 x = libxmp_buffer_read8(buf);
+		uint8 x = libxmp_bytes_read8(buf);
 		if (x & S3M_PAN_SET) {
 			mod->xxc[i].pan = (x << 4) & 0xff;
 		} else {
@@ -441,12 +441,12 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 			continue;
 		}
 
-		libxmp_buffer_seek(buf, start + pp_pat[i] * 16, SEEK_SET);
+		libxmp_bytes_seek(buf, start + pp_pat[i] * 16, SEEK_SET);
 		r = 0;
-		pat_len = libxmp_buffer_read16l(buf) - 2;
+		pat_len = libxmp_bytes_read16l(buf) - 2;
 
 		while (pat_len >= 0 && r < mod->xxp[i]->rows) {
-			b = libxmp_buffer_read8(buf);
+			b = libxmp_bytes_read8(buf);
 
 			if (b == S3M_EOR) {
 				r++;
@@ -457,7 +457,7 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 			event = c >= mod->chn ? &dummy : &EVENT(i, c, r);
 
 			if (b & S3M_NI_FOLLOW) {
-				switch (n = libxmp_buffer_read8(buf)) {
+				switch (n = libxmp_bytes_read8(buf)) {
 				case 255:
 					n = 0;
 					break;	/* Empty note */
@@ -468,18 +468,18 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 					n = 13 + 12 * MSN(n) + LSN(n);
 				}
 				event->note = n;
-				event->ins = libxmp_buffer_read8(buf);
+				event->ins = libxmp_bytes_read8(buf);
 				pat_len -= 2;
 			}
 
 			if (b & S3M_VOL_FOLLOWS) {
-				event->vol = libxmp_buffer_read8(buf) + 1;
+				event->vol = libxmp_bytes_read8(buf) + 1;
 				pat_len--;
 			}
 
 			if (b & S3M_FX_FOLLOWS) {
-				event->fxt = libxmp_buffer_read8(buf);
-				event->fxp = libxmp_buffer_read8(buf);
+				event->fxt = libxmp_bytes_read8(buf);
+				event->fxp = libxmp_bytes_read8(buf);
 				xlat_fx(c, event);
 
 				pat_len -= 2;
@@ -502,21 +502,21 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 		struct xmp_subinstrument *sub;
 		uint8 x;
 
-		xxi->sub = libxmp_mem_calloc(mem, sizeof(struct xmp_subinstrument));
+		xxi->sub = libxmp_mm_calloc(mem, sizeof(struct xmp_subinstrument));
 
 		sub = &xxi->sub[0];
 
-		libxmp_buffer_seek(buf, start + pp_ins[i] * 16, SEEK_SET);
+		libxmp_bytes_seek(buf, start + pp_ins[i] * 16, SEEK_SET);
 		sub->pan = 0x80;
 		sub->sid = i;
 
-		x = libxmp_buffer_read8(buf);
+		x = libxmp_bytes_read8(buf);
 
 		if (x >= 2) {
 #ifndef LIBXMP_CORE_PLAYER
 			/* OPL2 FM instrument */
 
-			libxmp_buffer_scan(buf, "s12;b8;s12;b8;b8;w16l;s28;d32b",
+			libxmp_bytes_scan(buf, "s12;b8;s12;b8;b8;w16l;s28;d32b",
 				&sah.dosname,		/* DOS file name */
 				NULL,
 				&sah.reg,		/* Adlib registers */
@@ -551,7 +551,7 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 #endif
 		}
 
-		libxmp_buffer_scan(buf, "s12;b8;w16l;d32l;d32l;d32l;b8;b8;b8;b8;w16l;w16l;d32l;w16l;w16l;d32l;s28;d32b",
+		libxmp_bytes_scan(buf, "s12;b8;w16l;d32l;d32l;d32l;b8;b8;b8;b8;w16l;w16l;d32l;w16l;w16l;d32l;s28;d32b",
 			&sih.dosname,		/* DOS file name */
 			NULL,			/* 0x1a */
 			&sih.memseg,		/* Pointer to sample data */
@@ -615,7 +615,7 @@ static int s3m_load(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, co
 
 		libxmp_c2spd_to_note(sih.c2spd, &sub->xpo, &sub->fin);
 
-		libxmp_buffer_seek(buf, start + 16L * sih.memseg, SEEK_SET);
+		libxmp_bytes_seek(buf, start + 16L * sih.memseg, SEEK_SET);
 
 		ret = libxmp_load_sample(mem, buf, m, sfh.ffi == 1 ? 0 : SAMPLE_FLAG_UNS, xxs, NULL);
 		if (ret < 0) {

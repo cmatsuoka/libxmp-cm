@@ -24,24 +24,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include "buffer.h"
+#include "bytes.h"
 #include "debug.h"
 
-struct libxmp_buffer {
+struct libxmp_bytes {
 	jmp_buf jmp;
-	char _err[LIBXMP_BUFFER_ERRSIZE];
+	char _err[LIBXMP_BYTES_ERRSIZE];
 	uint8 *start;
 	uint8 *pos;
 	uint8 *end;
 };
 
-#define B(b) ((struct libxmp_buffer *)(b))
+#define B(b) ((struct libxmp_bytes *)(b))
 
-LIBXMP_BUFFER libxmp_buffer_new(void *p, size_t size)
+LIBXMP_BYTES libxmp_bytes_new(void *p, size_t size)
 {
-	struct libxmp_buffer *b;
+	struct libxmp_bytes *b;
 
-	if ((b = calloc(sizeof (struct libxmp_buffer), 1)) == NULL) {
+	if ((b = calloc(sizeof (struct libxmp_bytes), 1)) == NULL) {
 		goto err;
 	}
 
@@ -49,24 +49,24 @@ LIBXMP_BUFFER libxmp_buffer_new(void *p, size_t size)
 	b->start = b->pos = p;
 	b->end = b->start + size;
 
-	return (LIBXMP_BUFFER)b;
+	return (LIBXMP_BYTES)b;
 
     err:
 	return NULL;
 }
 
-void libxmp_buffer_release(LIBXMP_BUFFER buf)
+void libxmp_bytes_release(LIBXMP_BYTES buf)
 {
 	D_(D_WARN "RELEASE BUF=%p", buf);
 	free(buf);
 }
 
-void libxmp_buffer_throw(LIBXMP_BUFFER buf, int val, char *fmt, ...)
+void libxmp_bytes_throw(LIBXMP_BYTES buf, int val, char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	vsnprintf(B(buf)->_err, LIBXMP_BUFFER_ERRSIZE, fmt, ap);
+	vsnprintf(B(buf)->_err, LIBXMP_BYTES_ERRSIZE, fmt, ap);
 	va_end(ap);
 
 	longjmp(B(buf)->jmp, val);
@@ -79,11 +79,11 @@ void libxmp_buffer_throw(LIBXMP_BUFFER buf, int val, char *fmt, ...)
 		B(buf)->pos += sizeof (T);					\
 	} else {							\
 		if (e == 'l') {						\
-			*b = (T)libxmp_buffer_read##f##l(buf);		\
+			*b = (T)libxmp_bytes_read##f##l(buf);		\
 		} else if (e == 'b') {					\
-			*b = (T)libxmp_buffer_read##f##b(buf);		\
+			*b = (T)libxmp_bytes_read##f##b(buf);		\
 		} else {						\
-			libxmp_buffer_throw((buf), LIBXMP_BUFFER_EINVAL,\
+			libxmp_bytes_throw((buf), LIBXMP_BYTES_EINVAL,\
 				"%s:%d: invalid endian: %c", __FUNCTION__, __LINE__, e);	\
 		}							\
 	}								\
@@ -96,7 +96,7 @@ void libxmp_buffer_throw(LIBXMP_BUFFER buf, int val, char *fmt, ...)
 		if (b == NULL) {				\
 			B(buf)->pos++;				\
 		} else {					\
-			*b = (T)libxmp_buffer_read8(buf);	\
+			*b = (T)libxmp_bytes_read8(buf);	\
 		}						\
 		break; }					\
 	case 16:						\
@@ -111,12 +111,12 @@ void libxmp_buffer_throw(LIBXMP_BUFFER buf, int val, char *fmt, ...)
 	}							\
 } while (0)
 
-int libxmp_buffer_left(LIBXMP_BUFFER buf)
+int libxmp_bytes_left(LIBXMP_BYTES buf)
 {
 	return B(buf)->end - B(buf)->pos;
 }
 
-int libxmp_buffer_scan(LIBXMP_BUFFER buf, char *fmt, ...)
+int libxmp_bytes_scan(LIBXMP_BYTES buf, char *fmt, ...)
 {
 	va_list ap;
 	int size;
@@ -130,7 +130,7 @@ int libxmp_buffer_scan(LIBXMP_BUFFER buf, char *fmt, ...)
 		switch (*fmt++) {
 		case 's':
 			size = strtoul(fmt, &fmt, 10);
-			libxmp_buffer_read(buf, va_arg(ap, void *), size);
+			libxmp_bytes_read(buf, va_arg(ap, void *), size);
 			break;
 		case 'b':
 			size = strtoul(fmt, &fmt, 10);
@@ -165,18 +165,18 @@ int libxmp_buffer_scan(LIBXMP_BUFFER buf, char *fmt, ...)
 	return -1;
 }
 
-void libxmp_buffer_read(LIBXMP_BUFFER buf, void *dst, int size)
+void libxmp_bytes_read(LIBXMP_BYTES buf, void *dst, int size)
 {
 	/* check range */
 	if (B(buf)->pos + size >= B(buf)->end) {
-		libxmp_buffer_throw(buf, LIBXMP_BUFFER_ERANGE, "%s:%d: invalid read (size %ld)", size);
+		libxmp_bytes_throw(buf, LIBXMP_BYTES_ERANGE, "%s:%d: invalid read (size %ld)", size);
 	}
 
 	memcpy(dst, B(buf)->pos, size);
 	B(buf)->pos += size;
 }
 
-int libxmp_buffer_try_read(LIBXMP_BUFFER buf, void *dst, int size)
+int libxmp_bytes_try_read(LIBXMP_BYTES buf, void *dst, int size)
 {
 	D_(D_INFO "size=%d", size);
 
@@ -193,14 +193,14 @@ int libxmp_buffer_try_read(LIBXMP_BUFFER buf, void *dst, int size)
 
 #define CHECK_RANGE(b,x) do {					\
 	if ((x) >= B(b)->end || (x) < B(b)->start) {		\
-		libxmp_buffer_throw((b), LIBXMP_BUFFER_ERANGE,	\
+		libxmp_bytes_throw((b), LIBXMP_BYTES_ERANGE,	\
 			"%s:%d: invalid offset %ld (size %ld)", \
 			__FUNCTION__, __LINE__, (x)-B(b)->start, B(b)->end-B(b)->start); \
 	}							\
 	B(b)->pos = (x);						\
 } while (0)
 
-void libxmp_buffer_seek(LIBXMP_BUFFER buf, long offset, int whence)
+void libxmp_bytes_seek(LIBXMP_BYTES buf, long offset, int whence)
 {
 	switch (whence) {
 	case SEEK_SET:
@@ -213,16 +213,16 @@ void libxmp_buffer_seek(LIBXMP_BUFFER buf, long offset, int whence)
 		CHECK_RANGE(buf, B(buf)->end - offset - 1);
 		break;
 	default:
-		libxmp_buffer_throw(buf, LIBXMP_BUFFER_EINVAL, "buffer seek: invalid seek whence %d", whence);
+		libxmp_bytes_throw(buf, LIBXMP_BYTES_EINVAL, "buffer seek: invalid seek whence %d", whence);
 	}
 }
 
-long libxmp_buffer_tell(LIBXMP_BUFFER buf)
+long libxmp_bytes_tell(LIBXMP_BYTES buf)
 {
 	return B(buf)->pos - B(buf)->start;
 }
 
-long libxmp_buffer_size(LIBXMP_BUFFER buf)
+long libxmp_bytes_size(LIBXMP_BYTES buf)
 {
 	return B(buf)->end - B(buf)->start;
 }
@@ -230,20 +230,20 @@ long libxmp_buffer_size(LIBXMP_BUFFER buf)
 
 #define CHECK_SIZE(b,x) do {					\
 	if (B(b)->pos + (x) >= B(b)->end) {			\
-		libxmp_buffer_throw((b), LIBXMP_BUFFER_ERANGE,	\
+		libxmp_bytes_throw((b), LIBXMP_BYTES_ERANGE,	\
 			"%s:%d: invalid position %ld (size %ld)", \
 			__FUNCTION__, __LINE__, B(b)->pos-B(b)->start, B(b)->end-B(b)->start);	\
 	}							\
 } while (0)
 
-uint8 libxmp_buffer_read8(LIBXMP_BUFFER buf)
+uint8 libxmp_bytes_read8(LIBXMP_BYTES buf)
 {
 	CHECK_SIZE(buf, 1);
 
 	return *B(buf)->pos++;
 }
 
-uint16 libxmp_buffer_read16l(LIBXMP_BUFFER buf)
+uint16 libxmp_bytes_read16l(LIBXMP_BYTES buf)
 {
 	uint16 a, b;
 
@@ -255,7 +255,7 @@ uint16 libxmp_buffer_read16l(LIBXMP_BUFFER buf)
 	return (b << 8) | a;
 }
 
-uint16 libxmp_buffer_read16b(LIBXMP_BUFFER buf)
+uint16 libxmp_bytes_read16b(LIBXMP_BYTES buf)
 {
 	uint16 a, b;
 
@@ -267,7 +267,7 @@ uint16 libxmp_buffer_read16b(LIBXMP_BUFFER buf)
 	return (a << 8) | b;
 }
 
-uint32 libxmp_buffer_read24l(LIBXMP_BUFFER buf)
+uint32 libxmp_bytes_read24l(LIBXMP_BYTES buf)
 {
 	uint32 a, b, c;
 
@@ -280,7 +280,7 @@ uint32 libxmp_buffer_read24l(LIBXMP_BUFFER buf)
 	return (c << 16) | (b << 8) | a;
 }
 
-uint32 libxmp_buffer_read24b(LIBXMP_BUFFER buf)
+uint32 libxmp_bytes_read24b(LIBXMP_BYTES buf)
 {
 	uint32 a, b, c;
 
@@ -293,7 +293,7 @@ uint32 libxmp_buffer_read24b(LIBXMP_BUFFER buf)
 	return (a << 16) | (b << 8) | c;
 }
 
-uint32 libxmp_buffer_read32l(LIBXMP_BUFFER buf)
+uint32 libxmp_bytes_read32l(LIBXMP_BYTES buf)
 {
 	uint32 a, b, c, d;
 
@@ -307,7 +307,7 @@ uint32 libxmp_buffer_read32l(LIBXMP_BUFFER buf)
 	return (d << 24) | (c << 16) | (b << 8) | a;
 }
 
-uint32 libxmp_buffer_read32b(LIBXMP_BUFFER buf)
+uint32 libxmp_bytes_read32b(LIBXMP_BYTES buf)
 {
 	uint32 a, b, c, d;
 

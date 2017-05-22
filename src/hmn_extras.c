@@ -82,15 +82,15 @@ void libxmp_hmn_play_extras(struct context_data *ctx, struct channel_data *xc, i
 	ce->volume = volume;
 }
 
-void libxmp_hmn_new_instrument_extras(LIBXMP_MEM mem, struct xmp_instrument *xxi)
+void libxmp_hmn_new_instrument_extras(LIBXMP_MM mem, struct xmp_instrument *xxi)
 {
-	xxi->extra = libxmp_mem_calloc(mem, sizeof(struct hmn_instrument_extras));
+	xxi->extra = libxmp_mm_calloc(mem, sizeof(struct hmn_instrument_extras));
 	HMN_INSTRUMENT_EXTRAS((*xxi))->magic = HMN_EXTRAS_MAGIC;
 }
 
-void libxmp_hmn_new_channel_extras(LIBXMP_MEM mem, struct channel_data *xc)
+void libxmp_hmn_new_channel_extras(LIBXMP_MM mem, struct channel_data *xc)
 {
-	xc->extra = libxmp_mem_calloc(mem, sizeof(struct hmn_channel_extras));
+	xc->extra = libxmp_mm_calloc(mem, sizeof(struct hmn_channel_extras));
 	HMN_CHANNEL_EXTRAS((*xc))->magic = HMN_EXTRAS_MAGIC;
 }
 
@@ -99,9 +99,9 @@ void libxmp_hmn_reset_channel_extras(struct channel_data *xc)
 	memset((char *)xc->extra + 4, 0, sizeof(struct hmn_channel_extras) - 4);
 }
 
-void libxmp_hmn_new_module_extras(LIBXMP_MEM mem, struct module_data *m)
+void libxmp_hmn_new_module_extras(LIBXMP_MM mem, struct module_data *m)
 {
-	m->extra = libxmp_mem_calloc(mem, sizeof(struct hmn_module_extras));
+	m->extra = libxmp_mm_calloc(mem, sizeof(struct hmn_module_extras));
 	HMN_MODULE_EXTRAS((*m))->magic = HMN_EXTRAS_MAGIC;
 }
 
