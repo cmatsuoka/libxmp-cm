@@ -85,24 +85,21 @@ static void set_md5sum(LIBXMP_BYTES buf, unsigned char *digest)
 
 int xmp_test_module(void *src, long size, struct xmp_test_info *info)
 {
+	LIBXMP_EXCEPTION ex;
 	LIBXMP_BYTES buf;
 	LIBXMP_MM mem;
 	char name[XMP_NAME_SIZE];
 	int i;
 	int ret = -XMP_ERROR_SYSTEM;
 
-	if ((buf = libxmp_bytes_new(src, size)) == NULL) {
+	if ((buf = libxmp_bytes_new(&ex, src, size)) == NULL) {
 		goto err;
 	}
-	if ((ret = libxmp_bytes_catch(buf)) != 0) {
-		D_(D_CRIT "%s", libxmp_bytes_error(buf));
+	if ((mem = libxmp_mm_new(&ex)) == NULL) {
 		goto err2;
 	}
-	if ((mem = libxmp_mm_new()) == NULL) {
-		goto err2;
-	}
-	if (libxmp_mm_catch(mem) != 0) {
-		D_(D_CRIT "%s", libxmp_mm_error(mem));
+	if (libxmp_exception_catch(&ex) != 0) {
+		D_(D_CRIT "%s", libxmp_exception_error(&ex));
 		ret = -XMP_ERROR_SYSTEM;
 		goto err3;
 	}
@@ -170,7 +167,7 @@ static int load_module(xmp_context opaque, LIBXMP_BYTES buf)
 	for (i = 0; format_loader[i] != NULL; i++) {
 		libxmp_bytes_seek(buf, 0, LIBXMP_BYTES_SEEK_SET);
 
-		if (libxmp_bytes_catch(buf) != 0) {
+		if (libxmp_exception_catch(&ctx->ex) != 0) {
 			/* Go to next format if access fault testing file */
 			continue;
 		}
@@ -179,21 +176,10 @@ static int load_module(xmp_context opaque, LIBXMP_BYTES buf)
 		test_result = format_loader[i]->test(mem, buf, NULL, 0);
 		if (test_result == 0) {
 			libxmp_bytes_seek(buf, 0, LIBXMP_BYTES_SEEK_SET);
-			if ((ret = libxmp_bytes_catch(buf)) != 0) {
-				D_(D_CRIT "exception loading module: %s", libxmp_bytes_error(buf));
+			if ((ret = libxmp_exception_catch(&ctx->ex)) != 0) {
+				D_(D_CRIT "exception loading module: %s", libxmp_exception_error(&ctx->ex));
 				switch (ret) {
 				case LIBXMP_BYTES_EINVAL:
-					ret = -XMP_ERROR_SYSTEM;
-					break;
-				default:
-					ret = -XMP_ERROR_LOAD;
-					break;
-				}
-				return ret;
-			}
-			if ((ret = libxmp_mm_catch(mem)) != 0) {
-				D_(D_CRIT "exception loading module: %s", libxmp_mm_error(mem));
-				switch (ret) {
 				case LIBXMP_MM_ENOMEM:
 					ret = -XMP_ERROR_SYSTEM;
 					break;
@@ -288,7 +274,7 @@ int xmp_load_module(xmp_context opaque, void *src, long size)
 	LIBXMP_BYTES buf;
 	int ret;
 
-	if ((buf = libxmp_bytes_new(src, size)) == NULL) {
+	if ((buf = libxmp_bytes_new(&ctx->ex, src, size)) == NULL) {
 		return -XMP_ERROR_SYSTEM;
 	}
 		

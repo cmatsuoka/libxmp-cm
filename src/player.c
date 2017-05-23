@@ -1476,8 +1476,8 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 	LIBXMP_MM mem = p->mem;
 	int i;
 
-	if ((libxmp_mm_catch(mem)) != 0) {
-		D_(D_CRIT "player exception: %s", libxmp_mm_error(mem));
+	if ((libxmp_exception_catch(&ctx->ex)) != 0) {
+		D_(D_CRIT "player exception: %s", libxmp_exception_error(&ctx->ex));
 		return -XMP_ERROR_SYSTEM;
 	}
 

@@ -73,7 +73,7 @@ void libxmp_alloc_pattern(LIBXMP_MM mem, struct xmp_module *mod, int num)
 {
 	/* Sanity check */
 	if (num < 0 || num >= mod->pat || mod->xxp[num] != NULL) {
-		libxmp_mm_throw(mem, LIBXMP_MM_EPARAM, "pattern %d: invalid allocation parameters", num);
+		libxmp_exception_throw(mem->ex, LIBXMP_MM_EPARMS, "pattern %d: invalid allocation parameters", num);
 	}
 
 	mod->xxp[num] = libxmp_mm_calloc(mem, sizeof (struct xmp_pattern) + sizeof (int) * (mod->chn - 1));
@@ -83,7 +83,7 @@ void libxmp_alloc_track(LIBXMP_MM mem, struct xmp_module *mod, int num, int rows
 {
 	/* Sanity check */
 	if (num < 0 || num >= mod->trk || mod->xxt[num] != NULL || rows <= 0) {
-		libxmp_mm_throw(mem, LIBXMP_MM_EPARAM, "track %d: invalid allocation parameters", num);
+		libxmp_exception_throw(mem->ex, LIBXMP_MM_EPARMS, "track %d: invalid allocation parameters", num);
 	}
 
 	mod->xxt[num] = libxmp_mm_calloc(mem, sizeof (struct xmp_track) + sizeof (struct xmp_event) * (rows - 1));
@@ -108,7 +108,7 @@ void libxmp_alloc_pattern_tracks(LIBXMP_MM mem, struct xmp_module *mod, int num,
 {
 	/* Sanity check */
 	if (rows < 0 || rows > 256) {
-		libxmp_mm_throw(mem, LIBXMP_MM_EPARAM, "pattern %d tracks: can't allocate %d rows", num, rows);
+		libxmp_exception_throw(mem->ex, LIBXMP_MM_EPARMS, "pattern %d tracks: can't allocate %d rows", num, rows);
 	}
 
 	libxmp_alloc_pattern(mem, mod, num);

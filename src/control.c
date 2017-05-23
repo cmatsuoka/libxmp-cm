@@ -43,12 +43,12 @@ xmp_context xmp_create_context()
 	}
 
 	/* player memory */
-	if ((ctx->p.mem = libxmp_mm_new()) == NULL) {
+	if ((ctx->p.mem = libxmp_mm_new(&ctx->ex)) == NULL) {
 		goto err2;
 	}
 
 	/* module memory */
-	if ((ctx->m.mem = libxmp_mm_new()) == NULL) {
+	if ((ctx->m.mem = libxmp_mm_new(&ctx->ex)) == NULL) {
 		goto err2;
 	}
 

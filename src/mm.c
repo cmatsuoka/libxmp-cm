@@ -29,24 +29,27 @@
 #define uthash_fatal(msg) goto err_uthash
 #include "uthash.h"
 
+#define M(m) ((struct libxmp_mm *)(m))
+
 struct mem_item {
 	void *ptr;
 	UT_hash_handle hh;
 };
 
 struct libxmp_mm {
-	jmp_buf jmp;
-	char _err[LIBXMP_MM_ERRSIZE];
+	LIBXMP_EXCEPTION *ex;
 	struct mem_item *hash;
 };
 
-LIBXMP_MM libxmp_mm_new()
+LIBXMP_MM libxmp_mm_new(LIBXMP_EXCEPTION *ex)
 {
 	struct libxmp_mm *m;
 
 	if ((m = calloc(sizeof (struct libxmp_mm), 1)) == NULL) {
 		return NULL;
 	}
+
+	m->ex = ex;
 
 	D_(D_WARN "MEM=%p", m);
 
@@ -59,17 +62,6 @@ void libxmp_mm_release(LIBXMP_MM m__)
 
 	libxmp_mm_clear(m__);
 	free(m__);
-}
-
-void libxmp_mm_throw(LIBXMP_MM m__, int val, char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vsnprintf(m__->_err, LIBXMP_MM_ERRSIZE, fmt, ap);
-	va_end(ap);
-
-	longjmp(m__->jmp, val);
 }
 
 void *libxmp_mm_calloc(LIBXMP_MM m__, size_t size)
@@ -107,7 +99,7 @@ void *libxmp_mm_alloc(LIBXMP_MM m__, size_t size)
     err2:
 	free(item);
     err:
-	libxmp_mm_throw(m__, LIBXMP_MM_ENOMEM, "%s:%d: memory allocation error (size %ld)",
+	libxmp_exception_throw(M(m__)->ex, LIBXMP_MM_ENOMEM, "%s:%d: memory allocation error (size %ld)",
 		__FUNCTION__, __LINE__, (long)size);
 	return NULL;
 }
@@ -130,7 +122,7 @@ void *libxmp_mm_realloc(LIBXMP_MM m__, void *ptr, size_t size)
 	return item->ptr;
 
     err:
-	libxmp_mm_throw(m__, LIBXMP_MM_ENOMEM, "%s:%d: memory reallocation error (size %ld)",
+	libxmp_exception_throw(M(m__)->ex, LIBXMP_MM_ENOMEM, "%s:%d: memory reallocation error (size %ld)",
 		__FUNCTION__, __LINE__, (long)size);
 	return NULL;
 }

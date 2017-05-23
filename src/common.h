@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "types.h"
+#include "exception.h"
 #include "mm.h"
 #include "xmp.h"
 
@@ -298,6 +299,7 @@ struct mixer_data {
 };
 
 struct context_data {
+	LIBXMP_EXCEPTION ex;
 	struct player_data p;
 	struct mixer_data s;
 	struct module_data m;

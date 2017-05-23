@@ -277,7 +277,7 @@ static void read_envelope(LIBXMP_BYTES buf, struct xmp_envelope *ei, struct it_e
 	if (env->num >= XMP_MAX_ENV_POINTS) {
 		env->flg = 0;
 		env->num = 0;
-		libxmp_bytes_throw(buf, LIBXMP_BYTES_EPARM, "invalid envelope size");
+		libxmp_exception_throw(buf->ex, LIBXMP_BYTES_EPARMS, "invalid envelope size");
 	}
 
 	for (i = 0; i < 25; i++) {
@@ -414,7 +414,7 @@ static int load_old_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_in
 		&i1h.name, NULL, &i1h.keys, &i1h.epoint, &i1h.enode);
 
 	if (i1h.magic != MAGIC_IMPI) {
-		libxmp_bytes_throw(buf, LIBXMP_BYTES_EPARM, "bad instrument magic");
+		libxmp_exception_throw(buf->ex, LIBXMP_BYTES_EPARMS, "bad instrument magic");
 	}
 
 	fix_name(i1h.name, 26);
@@ -522,7 +522,7 @@ static void load_new_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_i
 		&i2h.ifc, &i2h.ifr, &i2h.mch, &i2h.mpr, &i2h.mbnk, &i2h.keys);
 
 	if (i2h.magic != MAGIC_IMPI) {
-		libxmp_bytes_throw(buf, LIBXMP_BYTES_EPARM, "bad instrument magic");
+		libxmp_exception_throw(buf->ex, LIBXMP_BYTES_EPARMS, "bad instrument magic");
 	}
 
 	/* Sanity check */
@@ -662,7 +662,7 @@ static void load_it_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *
 
 	/* Sanity check */
 	if (xxs->len > MAX_SAMPLE_SIZE) {
-		libxmp_bytes_throw(buf, LIBXMP_BYTES_EPARM, "invalid sample size");
+		libxmp_exception_throw(buf->ex, LIBXMP_BYTES_EPARMS, "invalid sample size");
 	}
 
 	xxs->lps = ish.loopbeg;

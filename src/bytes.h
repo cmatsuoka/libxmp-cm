@@ -3,28 +3,22 @@
 
 #include <setjmp.h>
 #include "types.h"
+#include "exception.h"
 
-#define LIBXMP_BYTES_EINVAL	(-1)
-#define LIBXMP_BYTES_ERANGE	(-2)
-#define LIBXMP_BYTES_EPARM	(-3)
+#define LIBXMP_BYTES_ERANGE	(-100)
+#define LIBXMP_BYTES_EINVAL	(-101)
+#define LIBXMP_BYTES_EPARMS	(-102)
 
 #define LIBXMP_BYTES_SEEK_SET	0
 #define LIBXMP_BYTES_SEEK_CUR	1
 #define LIBXMP_BYTES_SEEK_END	2
 
-#define LIBXMP_BYTES_ERRSIZE	80
-
 typedef struct libxmp_bytes__ {
-	jmp_buf jmp;
-	char _err[LIBXMP_BYTES_ERRSIZE];
+	LIBXMP_EXCEPTION *ex;
 } *LIBXMP_BYTES;
 
-#define libxmp_bytes_catch(buf) setjmp((buf)->jmp)
-#define libxmp_bytes_error(buf) ((buf)->_err)
-
-LIBXMP_BYTES	libxmp_bytes_new	(void *, size_t);
+LIBXMP_BYTES	libxmp_bytes_new	(LIBXMP_EXCEPTION *, void *, size_t);
 void		libxmp_bytes_release	(LIBXMP_BYTES);
-void		libxmp_bytes_throw	(LIBXMP_BYTES, int, char *, ...);
 int		libxmp_bytes_left	(LIBXMP_BYTES);
 int		libxmp_bytes_scan	(LIBXMP_BYTES, char *, ...);
 int		libxmp_bytes_try_read	(LIBXMP_BYTES, void *, int);

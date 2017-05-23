@@ -28,8 +28,7 @@
 #include "debug.h"
 
 struct libxmp_bytes {
-	jmp_buf jmp;
-	char _err[LIBXMP_BYTES_ERRSIZE];
+	LIBXMP_EXCEPTION *ex;
 	uint8 *start;
 	uint8 *pos;
 	uint8 *end;
@@ -37,7 +36,7 @@ struct libxmp_bytes {
 
 #define B(b) ((struct libxmp_bytes *)(b))
 
-LIBXMP_BYTES libxmp_bytes_new(void *p, size_t size)
+LIBXMP_BYTES libxmp_bytes_new(LIBXMP_EXCEPTION *ex, void *p, size_t size)
 {
 	struct libxmp_bytes *b;
 
@@ -46,6 +45,7 @@ LIBXMP_BYTES libxmp_bytes_new(void *p, size_t size)
 	}
 
 	D_(D_WARN "BUF=%p", b);
+	b->ex = ex;
 	b->start = b->pos = p;
 	b->end = b->start + size;
 
@@ -61,17 +61,6 @@ void libxmp_bytes_release(LIBXMP_BYTES buf)
 	free(buf);
 }
 
-void libxmp_bytes_throw(LIBXMP_BYTES buf, int val, char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vsnprintf(B(buf)->_err, LIBXMP_BYTES_ERRSIZE, fmt, ap);
-	va_end(ap);
-
-	longjmp(B(buf)->jmp, val);
-}
-
 #define ASSIGN_ENDIAN(buf,T,fmt,f) do {					\
 	char e = *(fmt)++;						\
 	T *b = va_arg(ap, T *);						\
@@ -83,7 +72,7 @@ void libxmp_bytes_throw(LIBXMP_BYTES buf, int val, char *fmt, ...)
 		} else if (e == 'b') {					\
 			*b = (T)libxmp_bytes_read##f##b(buf);		\
 		} else {						\
-			libxmp_bytes_throw((buf), LIBXMP_BYTES_EINVAL,\
+			libxmp_exception_throw(B(buf)->ex, LIBXMP_BYTES_EINVAL,\
 				"%s:%d: invalid endian: %c", __FUNCTION__, __LINE__, e);	\
 		}							\
 	}								\
@@ -175,7 +164,7 @@ void libxmp_bytes_read(LIBXMP_BYTES buf, void *dst, int size)
 {
 	/* check range */
 	if (B(buf)->pos + size >= B(buf)->end) {
-		libxmp_bytes_throw(buf, LIBXMP_BYTES_ERANGE, "%s:%d: invalid read (size %ld)", size);
+		libxmp_exception_throw(B(buf)->ex, LIBXMP_BYTES_ERANGE, "%s:%d: invalid read (size %ld)", size);
 	}
 
 	memcpy(dst, B(buf)->pos, size);
@@ -199,7 +188,7 @@ int libxmp_bytes_try_read(LIBXMP_BYTES buf, void *dst, int size)
 
 #define CHECK_RANGE(b,x) do {					\
 	if ((x) >= B(b)->end || (x) < B(b)->start) {		\
-		libxmp_bytes_throw((b), LIBXMP_BYTES_ERANGE,	\
+		libxmp_exception_throw(B(b)->ex, LIBXMP_BYTES_ERANGE,	\
 			"%s:%d: invalid offset %ld (size %ld)", \
 			__FUNCTION__, __LINE__, (x)-B(b)->start, B(b)->end-B(b)->start); \
 	}							\
@@ -219,7 +208,7 @@ void libxmp_bytes_seek(LIBXMP_BYTES buf, long offset, int whence)
 		CHECK_RANGE(buf, B(buf)->end - offset - 1);
 		break;
 	default:
-		libxmp_bytes_throw(buf, LIBXMP_BYTES_EINVAL, "buffer seek: invalid seek whence %d", whence);
+		libxmp_exception_throw(B(buf)->ex, LIBXMP_BYTES_EINVAL, "buffer seek: invalid seek whence %d", whence);
 	}
 }
 
@@ -236,7 +225,7 @@ long libxmp_bytes_size(LIBXMP_BYTES buf)
 
 #define CHECK_SIZE(b,x) do {					\
 	if (B(b)->pos + (x) > B(b)->end) {			\
-		libxmp_bytes_throw((b), LIBXMP_BYTES_ERANGE,	\
+		libxmp_exception_throw(B(b)->ex, LIBXMP_BYTES_ERANGE,	\
 			"%s:%d: invalid position %ld (size %ld)", \
 			__FUNCTION__, __LINE__, B(b)->pos-B(b)->start, B(b)->end-B(b)->start);	\
 	}							\
