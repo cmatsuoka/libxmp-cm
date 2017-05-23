@@ -271,7 +271,7 @@ static void read_envelope(LIBXMP_BYTES buf, struct xmp_envelope *ei, struct it_e
 	int i;
 
 	libxmp_bytes_scan(buf, "b8;b8;b8;b8;b8;b8",
-		&env->flg, &env->num, &env->lpb, &env->lpe, &env->slb, env->sle);
+		&env->flg, &env->num, &env->lpb, &env->lpe, &env->slb, &env->sle);
 	
 	/* Sanity check */
 	if (env->num >= XMP_MAX_ENV_POINTS) {
@@ -281,8 +281,7 @@ static void read_envelope(LIBXMP_BYTES buf, struct xmp_envelope *ei, struct it_e
 	}
 
 	for (i = 0; i < 25; i++) {
-		env->node[i].y = libxmp_bytes_read8(buf);
-		env->node[i].x = libxmp_bytes_read16l(buf);
+		libxmp_bytes_scan(buf, "b8;w16l", &env->node[i].y, &env->node[i].x);
 	}
 
 	ei->flg = env->flg & IT_ENV_ON ? XMP_ENVELOPE_ON : 0;
@@ -329,7 +328,7 @@ static void identify_tracker(struct module_data *m, struct it_file_header *ifh)
 	case 0x02:		/* test from Schism Tracker sources */
 		if (ifh->cmwt == 0x0200 && ifh->cwt == 0x0214
 		    && ifh->flags == 9 && ifh->special == 0
-		    && ifh->hilite_maj == 0 && ifh->hilite_min == 0
+		    && ifh->philigt == 0
 		    && ifh->insnum == 0 && ifh->patnum + 1 == ifh->ordnum
 		    && ifh->gv == 128 && ifh->mv == 100 && ifh->is == 1
 		    && ifh->sep == 128 && ifh->pwd == 0
@@ -409,10 +408,10 @@ static int load_old_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_in
 	struct it_instrument1_header i1h;
 	int c, k, j;
 
-	libxmp_bytes_scan(buf, "s4;s12;b8;b8;b8;b8;b8;b8;w16l;b8;b8;w16l;b8;s26;s240;s200;s50",
-		&i1h.magic, &i1h.dosname, &i1h, &i1h.zero, &i1h.flags, &i1h.vls, &i1h.vle,
-		&i1h.sls, &i1h.sle, &i1h.fadeout, &i1h.nna, &i1h.dnc, &i1h.trkvers, &i1h.nos,
-		&i1h.name, &i1h.keys, &i1h.epoint, &i1h.enode);
+	libxmp_bytes_scan(buf, "s4;s12;b8;b8;b8;b8;b8;b8;w16l;w16l;b8;b8;w16l;b8;b8;s26;s6;s240;s200;s50",
+		&i1h.magic, &i1h.dosname, &i1h.zero, &i1h.flags, &i1h.vls, &i1h.vle, &i1h.sls,
+		&i1h.sle, NULL, &i1h.fadeout, &i1h.nna, &i1h.dnc, &i1h.trkvers, &i1h.nos, NULL,
+		&i1h.name, NULL, &i1h.keys, &i1h.epoint, &i1h.enode);
 
 	if (i1h.magic != MAGIC_IMPI) {
 		libxmp_bytes_throw(buf, LIBXMP_BYTES_EPARM, "bad instrument magic");
@@ -517,10 +516,10 @@ static void load_new_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_i
 	int dca2nna[] = { 0, 2, 3 };
 	int c, k, j;
 
-	libxmp_bytes_scan(buf, "s4;s12;b8;b8;b8;b8;w16;b8;b8;b8;b8;b8;b8;w16l;b8;s26;b8;b8;b8;b8;w16l;s240",
-		&i2h.magic, &i2h.dosname, &i2h.zero, &i2h.nna, &i2h.dct, &i2h.dca, &i2h.fadeout,
-		&i2h.pps, &i2h.ppc, &i2h.gbv, &i2h.dfp, &i2h.rv, &i2h.rp, &i2h.trkvers, &i2h.nos,
-		&i2h.name, &i2h.ifc, &i2h.ifr, &i2h.mch, &i2h.mpr, &i2h.mbnk, &i2h.keys);
+	libxmp_bytes_scan(buf, "d32b;s12;b8;b8;b8;b8;w16l;b8;b8;b8;b8;b8;b8;w16l;b8;b8;s26;b8;b8;b8;b8;w16l;s240",
+		&i2h.magic, &i2h.dosname, &i2h.zero, &i2h.nna, &i2h.dct, &i2h.dca, &i2h.fadeout, &i2h.pps,
+		&i2h.ppc, &i2h.gbv, &i2h.dfp, &i2h.rv, &i2h.rp, &i2h.trkvers, &i2h.nos, NULL, &i2h.name,
+		&i2h.ifc, &i2h.ifr, &i2h.mch, &i2h.mpr, &i2h.mbnk, &i2h.keys);
 
 	if (i2h.magic != MAGIC_IMPI) {
 		libxmp_bytes_throw(buf, LIBXMP_BYTES_EPARM, "bad instrument magic");
@@ -649,7 +648,7 @@ static void load_it_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *
 	xxs = &mod->xxs[i];
 	xsmp = &m->xsmp[i];
 
-	libxmp_bytes_scan(buf, "s12;b8;b8;b8;b8;s26;b8;b8;d32l;d32l;d32l;d32l;d32;d32;d32;b8;b8;b8;b8",
+	libxmp_bytes_scan(buf, "s12;b8;b8;b8;b8;s26;b8;b8;d32l;d32l;d32l;d32l;d32l;d32l;d32l;b8;b8;b8;b8",
 		&ish.dosname, &ish.zero, &ish.gvl, &ish.flags, &ish.vol, &ish.name, &ish.convert,
 		&ish.dfp, &ish.length, &ish.loopbeg, &ish.loopend, &ish.c5spd, &ish.sloopbeg,
 		&ish.sloopend, &ish.sample_ptr, &ish.vis, &ish.vid, &ish.vir, &ish.vit);
@@ -928,13 +927,14 @@ static int it_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const
 		return -1;
 	}
 
-	libxmp_bytes_scan(buf, "s26;b8;b8;b8;b8;b8;b8;w16l;w16l;w16l;w16l;b8;b8;b8;b8;b8;b8;w16l;d32l;d32l;s64;s64",
-		&ifh.name, &ifh.hilite_min, &ifh.hilite_maj, &ifh.ordnum, &ifh.insnum, &ifh.smpnum, &ifh.patnum,
-		&ifh.cwt, &ifh.cmwt, &ifh.flags, &ifh.special, &ifh.gv, &ifh.mv, &ifh.is, &ifh.it, &ifh.sep,
-		&ifh.pwd, &ifh.msglen, &ifh.msgofs, &ifh.rsvd, &ifh.chpan, &ifh.chvol);
+	libxmp_bytes_scan(buf, "s26;w16l;w16l;w16l;w16l;w16l;w16l;w16l;w16l;w16l;b8;b8;b8;b8;b8;b8;w16l;d32l;d32l;s64;s64",
+		&ifh.name, &ifh.philigt, &ifh.ordnum, &ifh.insnum, &ifh.smpnum, &ifh.patnum, &ifh.cwt, &ifh.cmwt,
+		&ifh.flags, &ifh.special, &ifh.gv, &ifh.mv, &ifh.is, &ifh.it, &ifh.sep, &ifh.pwd, &ifh.msglen,
+		&ifh.msgofs, &ifh.rsvd, &ifh.chpan, &ifh.chvol);
 
 	/* Sanity check */
 	if (ifh.gv > 0x80 || ifh.mv > 0x80) {
+		D_(D_CRIT "sanity check: gv, mv");
 		return -1;
 	}
 

@@ -19,10 +19,8 @@ static void _compare_mixer_data(char *mod, char *data, int loops, int ignore_rv)
 	int time, row, frame, chan, period, note, ins, vol, pan, pos0, cutoff;
 	char line[200];
 	FILE *f;
-	int i, voc, ret;
-	int fd;
-	struct stat st;
-	char *addr;
+	int i, voc;
+	int ret;
 
 	f = fopen(data, "r");
 	fail_unless(f != NULL, "can't open data file");
@@ -30,17 +28,7 @@ static void _compare_mixer_data(char *mod, char *data, int loops, int ignore_rv)
 	opaque = xmp_create_context();
 	fail_unless(opaque != NULL, "can't create context");
 
-	/* mmap mod file */
-	fd = open(mod, O_RDONLY);
-	fail_unless(fd > 0, "can't open mod file");
-
-	ret = fstat(fd, &st);
-	fail_unless(ret == 0, "can't stat mod file");
-
-	addr = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-	fail_unless(addr != MAP_FAILED, "can't mmap mod file");
-
-	ret = xmp_load_module(opaque, addr, st.st_size);
+	ret = load_module(opaque, mod);
 	fail_unless(ret == 0, "can't load module");
 
 	ctx = (struct context_data *)opaque;
@@ -104,6 +92,29 @@ static void _compare_mixer_data(char *mod, char *data, int loops, int ignore_rv)
 	xmp_end_player(opaque);
 	xmp_release_module(opaque);
 	xmp_free_context(opaque);
+}
+
+int load_module(xmp_context opaque, char *mod)
+{
+	int fd;
+	void *addr;
+	struct stat st;
+	int ret;
+
+	/* mmap mod file */
+	fd = open(mod, O_RDONLY);
+	fail_unless(fd > 0, "can't open mod file");
+
+	ret = fstat(fd, &st);
+	fail_unless(ret == 0, "can't stat mod file");
+
+	addr = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+	fail_unless(addr != MAP_FAILED, "can't mmap mod file");
+
+	ret = xmp_load_module(opaque, addr, st.st_size);
+	fail_unless(ret == 0, "can't load mod file");
+
+	return ret;
 }
 
 void compare_mixer_data(char *mod, char *data)

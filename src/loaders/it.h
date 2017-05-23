@@ -68,8 +68,7 @@
 struct it_file_header {
 	uint32 magic;		/* 'IMPM' */
 	uint8 name[26];		/* ASCIIZ Song name */
-	uint8 hilite_min;	/* Pattern editor highlight */
-	uint8 hilite_maj;	/* Pattern editor highlight */
+	uint16 philigt;		/* Pattern editor highlight */
 	uint16 ordnum;		/* Number of orders (must be even) */
 	uint16 insnum;		/* Number of instruments */
 	uint16 smpnum;		/* Number of samples */

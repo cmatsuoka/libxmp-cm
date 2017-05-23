@@ -16,7 +16,7 @@ TEST(test_openmpt_it_randompan)
 	int i;
 
 	opaque = xmp_create_context();
-	xmp_load_module(opaque, "openmpt/it/RandomPan.it");
+	load_module(opaque, "openmpt/it/RandomPan.it");
 	xmp_start_player(opaque, 8000, 0);
 	xmp_set_player(opaque, XMP_PLAYER_MIX, 100);
 

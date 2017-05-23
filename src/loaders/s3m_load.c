@@ -240,7 +240,6 @@ static int s3m_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, cons
 	uint8 n, b;
 	uint16 *pp_ins;			/* Parapointers to instruments */
 	uint16 *pp_pat;			/* Parapointers to patterns */
-	int ret;
 
 	LOAD_INIT();
 

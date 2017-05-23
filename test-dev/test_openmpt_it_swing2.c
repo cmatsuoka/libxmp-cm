@@ -13,7 +13,7 @@ TEST(test_openmpt_it_swing2)
 	int i;
 
 	opaque = xmp_create_context();
-	xmp_load_module(opaque, "openmpt/it/swing2.it");
+	load_module(opaque, "openmpt/it/swing2.it");
 	xmp_start_player(opaque, 8000, 0);
 
 	while (1) {

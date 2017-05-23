@@ -76,7 +76,7 @@ void libxmp_bytes_throw(LIBXMP_BYTES buf, int val, char *fmt, ...)
 	char e = *(fmt)++;						\
 	T *b = va_arg(ap, T *);						\
 	if (b == NULL) {						\
-		B(buf)->pos += sizeof (T);					\
+		B(buf)->pos += sizeof (T);				\
 	} else {							\
 		if (e == 'l') {						\
 			*b = (T)libxmp_bytes_read##f##l(buf);		\
@@ -121,6 +121,7 @@ int libxmp_bytes_scan(LIBXMP_BYTES buf, char *fmt, ...)
 	va_list ap;
 	int size;
 	char t;
+	void *p;
 
 	va_start(ap, fmt);
 
@@ -130,7 +131,12 @@ int libxmp_bytes_scan(LIBXMP_BYTES buf, char *fmt, ...)
 		switch (*fmt++) {
 		case 's':
 			size = strtoul(fmt, &fmt, 10);
-			libxmp_bytes_read(buf, va_arg(ap, void *), size);
+			p = va_arg(ap, void*);
+			if (p == NULL) {
+				B(buf)->pos += size;
+			} else {
+				libxmp_bytes_read(buf, p, size);
+			}
 			break;
 		case 'b':
 			size = strtoul(fmt, &fmt, 10);
@@ -229,7 +235,7 @@ long libxmp_bytes_size(LIBXMP_BYTES buf)
 
 
 #define CHECK_SIZE(b,x) do {					\
-	if (B(b)->pos + (x) >= B(b)->end) {			\
+	if (B(b)->pos + (x) > B(b)->end) {			\
 		libxmp_bytes_throw((b), LIBXMP_BYTES_ERANGE,	\
 			"%s:%d: invalid position %ld (size %ld)", \
 			__FUNCTION__, __LINE__, B(b)->pos-B(b)->start, B(b)->end-B(b)->start);	\

@@ -15,7 +15,7 @@ TEST(test_openmpt_it_swing3)
 	int i;
 
 	opaque = xmp_create_context();
-	xmp_load_module(opaque, "openmpt/it/swing3.it");
+	load_module(opaque, "openmpt/it/swing3.it");
 	xmp_start_player(opaque, 8000, 0);
 	xmp_set_player(opaque, XMP_PLAYER_MIX, 100);
 

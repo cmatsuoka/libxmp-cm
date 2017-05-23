@@ -52,6 +52,7 @@ void set_period_type(struct context_data *, int);
 void set_quirk(struct context_data *, int, int);
 void reset_quirk(struct context_data *, int);
 void new_event(struct context_data *, int, int, int, int, int, int, int, int, int, int);
+int load_module(xmp_context, char *);
 
 #define declare_test(x) TEST_FUNC(x)
 #include "all_tests.c"
