@@ -20,7 +20,6 @@
  * THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -115,7 +114,7 @@ int xmp_test_module(void *src, long size, struct xmp_test_info *info)
 
 	for (i = 0; format_loader[i] != NULL; i++) {
 
-		libxmp_bytes_seek(buf, 0, SEEK_SET);
+		libxmp_bytes_seek(buf, 0, LIBXMP_BYTES_SEEK_SET);
 
 		if (format_loader[i]->test(mem, buf, name, 0) == 0) {
 			int is_prowizard = 0;
@@ -169,7 +168,7 @@ static int load_module(xmp_context opaque, LIBXMP_BYTES buf)
 	D_(D_WARN "load");
 	test_result = load_result = -1;
 	for (i = 0; format_loader[i] != NULL; i++) {
-		libxmp_bytes_seek(buf, 0, SEEK_SET);
+		libxmp_bytes_seek(buf, 0, LIBXMP_BYTES_SEEK_SET);
 
 		if (libxmp_bytes_catch(buf) != 0) {
 			/* Go to next format if access fault testing file */
@@ -179,7 +178,7 @@ static int load_module(xmp_context opaque, LIBXMP_BYTES buf)
 		D_(D_WARN "test %s", format_loader[i]->name);
 		test_result = format_loader[i]->test(mem, buf, NULL, 0);
 		if (test_result == 0) {
-			libxmp_bytes_seek(buf, 0, SEEK_SET);
+			libxmp_bytes_seek(buf, 0, LIBXMP_BYTES_SEEK_SET);
 			if ((ret = libxmp_bytes_catch(buf)) != 0) {
 				D_(D_CRIT "exception loading module: %s", libxmp_bytes_error(buf));
 				switch (ret) {

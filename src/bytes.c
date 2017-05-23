@@ -209,13 +209,13 @@ int libxmp_bytes_try_read(LIBXMP_BYTES buf, void *dst, int size)
 void libxmp_bytes_seek(LIBXMP_BYTES buf, long offset, int whence)
 {
 	switch (whence) {
-	case SEEK_SET:
+	case LIBXMP_BYTES_SEEK_SET:
 		CHECK_RANGE(buf, B(buf)->start + offset);
 		break;
-	case SEEK_CUR:
+	case LIBXMP_BYTES_SEEK_CUR:
 		CHECK_RANGE(buf, B(buf)->pos + offset);
 		break;
-	case SEEK_END:
+	case LIBXMP_BYTES_SEEK_END:
 		CHECK_RANGE(buf, B(buf)->end - offset - 1);
 		break;
 	default:

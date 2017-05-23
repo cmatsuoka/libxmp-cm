@@ -219,7 +219,7 @@ void libxmp_load_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, 
 	 */
 	if (xxs->len > MAX_SAMPLE_SIZE || (m && m->smpctl & XMP_SMPCTL_SKIP)) {
 		if (~flags & SAMPLE_FLAG_NOLOAD) {
-			libxmp_bytes_seek(buf, xxs->len, SEEK_CUR);
+			libxmp_bytes_seek(buf, xxs->len, LIBXMP_BYTES_SEEK_CUR);
 		}
 		return;
 	}

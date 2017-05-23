@@ -90,17 +90,17 @@ const struct format_loader libxmp_loader_s3m = {
 
 static int s3m_test(LIBXMP_MM mem, LIBXMP_BYTES buf, char *t, const int start)
 {
-	libxmp_bytes_seek(buf, start + 44, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 44, LIBXMP_BYTES_SEEK_SET);
 	if (libxmp_bytes_read32b(buf) != MAGIC_SCRM) {
 		return -1;
 	}
 
-	libxmp_bytes_seek(buf, start + 29, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 29, LIBXMP_BYTES_SEEK_SET);
 	if (libxmp_bytes_read8(buf) != 0x10) {
 		return -1;
 	}
 
-	libxmp_bytes_seek(buf, start + 0, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 0, LIBXMP_BYTES_SEEK_SET);
 	libxmp_read_title(buf, t, 28);
 
 	return 0;
@@ -328,7 +328,7 @@ static int s3m_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, cons
 	} else {
 		mod->len = XMP_MAX_MOD_LENGTH;
 		libxmp_bytes_read(buf, mod->xxo, mod->len);
-		libxmp_bytes_seek(buf, sfh.ordnum - XMP_MAX_MOD_LENGTH, SEEK_CUR);
+		libxmp_bytes_seek(buf, sfh.ordnum - XMP_MAX_MOD_LENGTH, LIBXMP_BYTES_SEEK_CUR);
 	}
 
 	/* Don't trust sfh.patnum */
@@ -440,7 +440,7 @@ static int s3m_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, cons
 			continue;
 		}
 
-		libxmp_bytes_seek(buf, start + pp_pat[i] * 16, SEEK_SET);
+		libxmp_bytes_seek(buf, start + pp_pat[i] * 16, LIBXMP_BYTES_SEEK_SET);
 		r = 0;
 		pat_len = libxmp_bytes_read16l(buf) - 2;
 
@@ -505,7 +505,7 @@ static int s3m_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, cons
 
 		sub = &xxi->sub[0];
 
-		libxmp_bytes_seek(buf, start + pp_ins[i] * 16, SEEK_SET);
+		libxmp_bytes_seek(buf, start + pp_ins[i] * 16, LIBXMP_BYTES_SEEK_SET);
 		sub->pan = 0x80;
 		sub->sid = i;
 
@@ -610,7 +610,7 @@ static int s3m_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, cons
 		   xxs->flg & XMP_SAMPLE_LOOP ? 'L' : ' ', sub->vol, sih.c2spd);
 
 		libxmp_c2spd_to_note(sih.c2spd, &sub->xpo, &sub->fin);
-		libxmp_bytes_seek(buf, start + 16L * sih.memseg, SEEK_SET);
+		libxmp_bytes_seek(buf, start + 16L * sih.memseg, LIBXMP_BYTES_SEEK_SET);
 		libxmp_load_sample(mem, buf, m, sfh.ffi == 1 ? 0 : SAMPLE_FLAG_UNS, xxs, NULL);
 	}
 

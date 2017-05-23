@@ -738,7 +738,7 @@ static void load_it_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *
 	if (ish.flags & IT_SMP_SAMPLE && xxs->len > 1) {
 		int cvt = 0;
 
-		libxmp_bytes_seek(buf, start + ish.sample_ptr, SEEK_SET);
+		libxmp_bytes_seek(buf, start + ish.sample_ptr, LIBXMP_BYTES_SEEK_SET);
 
 		if (xxs->lpe > xxs->len || xxs->lps >= xxs->lpe) {
 			xxs->flg &= ~XMP_SAMPLE_LOOP;
@@ -770,7 +770,7 @@ static void load_it_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *
 			if (ish.flags & IT_SMP_SLOOP) {
 				long pos = libxmp_bytes_tell(buf);
 				libxmp_load_sample(mem, buf, m, SAMPLE_FLAG_NOLOAD | cvt, &m->xsmp[i], data);
-				libxmp_bytes_seek(buf, pos, SEEK_SET);
+				libxmp_bytes_seek(buf, pos, LIBXMP_BYTES_SEEK_SET);
 			}
 
 			libxmp_load_sample(mem, buf, m, SAMPLE_FLAG_NOLOAD | cvt, &mod->xxs[i], data);
@@ -779,7 +779,7 @@ static void load_it_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *
 			if (ish.flags & IT_SMP_SLOOP) {
 				long pos = libxmp_bytes_tell(buf);
 				libxmp_load_sample(mem, buf, m, cvt, &m->xsmp[i], NULL);
-				libxmp_bytes_seek(buf, pos, SEEK_SET);
+				libxmp_bytes_seek(buf, pos, LIBXMP_BYTES_SEEK_SET);
 			}
 
 			libxmp_load_sample(mem, buf, m, cvt, &mod->xxs[i], NULL);
@@ -997,7 +997,7 @@ static int it_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const
 		libxmp_bytes_read(buf, mod->xxo, mod->len);
 	} else {
 		libxmp_bytes_read(buf, mod->xxo, XMP_MAX_MOD_LENGTH);
-		libxmp_bytes_seek(buf, mod->len - XMP_MAX_MOD_LENGTH, SEEK_CUR);
+		libxmp_bytes_seek(buf, mod->len - XMP_MAX_MOD_LENGTH, LIBXMP_BYTES_SEEK_CUR);
 		mod->len = XMP_MAX_MOD_LENGTH;
 	}
 
@@ -1047,11 +1047,11 @@ static int it_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const
 
 		if (!sample_mode && ifh.cmwt >= 0x200) {
 			/* New instrument format */
-			libxmp_bytes_seek(buf, start + pp_ins[i], SEEK_SET);
+			libxmp_bytes_seek(buf, start + pp_ins[i], LIBXMP_BYTES_SEEK_SET);
 			load_new_it_instrument(mem, buf, xxi);
 		} else if (!sample_mode) {
 			/* Old instrument format */
-			libxmp_bytes_seek(buf, start + pp_ins[i], SEEK_SET);
+			libxmp_bytes_seek(buf, start + pp_ins[i], LIBXMP_BYTES_SEEK_SET);
 			load_old_it_instrument(mem, buf, xxi);
 		}
 	}
@@ -1059,7 +1059,7 @@ static int it_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const
 	D_(D_INFO "Stored Samples: %d", mod->smp);
 
 	for (i = 0; i < mod->smp; i++) {
-		libxmp_bytes_seek(buf, start + pp_smp[i], SEEK_SET);
+		libxmp_bytes_seek(buf, start + pp_smp[i], LIBXMP_BYTES_SEEK_SET);
 		load_it_sample(mem, buf, m, i, start, sample_mode);
 	}
 
@@ -1078,7 +1078,7 @@ static int it_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const
 			continue;
 		}
 
-		libxmp_bytes_seek(buf, start + pp_pat[i], SEEK_SET);
+		libxmp_bytes_seek(buf, start + pp_pat[i], LIBXMP_BYTES_SEEK_SET);
 		pat_len = libxmp_bytes_read16l(buf) /* - 4 */ ;
 		libxmp_bytes_read16l(buf);
 		memset(mask, 0, L_CHANNELS);
@@ -1143,7 +1143,7 @@ static int it_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const
 			continue;
 		}
 
-		libxmp_bytes_seek(buf, start + pp_pat[i], SEEK_SET);
+		libxmp_bytes_seek(buf, start + pp_pat[i], LIBXMP_BYTES_SEEK_SET);
 		load_it_pattern(mem, buf, m, i, new_fx);
 	}
 
@@ -1151,7 +1151,7 @@ static int it_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const
 
 	if (ifh.special & IT_HAS_MSG) {
 		if ((m->comment = malloc(ifh.msglen)) != NULL) {
-			libxmp_bytes_seek(buf, start + ifh.msgofs, SEEK_SET);
+			libxmp_bytes_seek(buf, start + ifh.msgofs, LIBXMP_BYTES_SEEK_SET);
 
 			D_(D_INFO "Message length : %d", ifh.msglen);
 

@@ -119,7 +119,7 @@ static int mod_test(LIBXMP_MM mem, LIBXMP_BYTES buf, char *t, const int start)
 	long size;
 	int count;
 
-	libxmp_bytes_seek(buf, start + 1080, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 1080, LIBXMP_BYTES_SEEK_SET);
 	libxmp_bytes_read(buf, magic, 4);
 
 	/* Check xxCH */
@@ -150,11 +150,11 @@ static int mod_test(LIBXMP_MM mem, LIBXMP_BYTES buf, char *t, const int start)
 	 * Sanity check to prevent loading NoiseRunner and other module
 	 * formats with valid magic at offset 1080
 	 */
-	libxmp_bytes_seek(buf, start + 20, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 20, LIBXMP_BYTES_SEEK_SET);
 	for (i = 0; i < 31; i++) {
 		uint8 x;
 
-		libxmp_bytes_seek(buf, 22, SEEK_CUR);	/* Instrument name */
+		libxmp_bytes_seek(buf, 22, LIBXMP_BYTES_SEEK_CUR);	/* Instrument name */
 
 		/* OpenMPT can create mods with large samples */
 		libxmp_bytes_read16b(buf);	/* sample size */
@@ -183,18 +183,18 @@ static int mod_test(LIBXMP_MM mem, LIBXMP_BYTES buf, char *t, const int start)
 	/* get file size */
 	size = libxmp_bytes_size(buf);
 	smp_size = 0;
-	libxmp_bytes_seek(buf, start + 20, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 20, LIBXMP_BYTES_SEEK_SET);
 
 	/* get samples size */
 	for (i = 0; i < 31; i++) {
-		libxmp_bytes_seek(buf, 22, SEEK_CUR);
+		libxmp_bytes_seek(buf, 22, LIBXMP_BYTES_SEEK_CUR);
 		smp_size += 2 * libxmp_bytes_read16b(buf);	/* Length in 16-bit words */
-		libxmp_bytes_seek(buf, 6, SEEK_CUR);
+		libxmp_bytes_seek(buf, 6, LIBXMP_BYTES_SEEK_CUR);
 	}
 
 	/* get number of patterns */
 	num_pat = 0;
-	libxmp_bytes_seek(buf, start + 952, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 952, LIBXMP_BYTES_SEEK_SET);
 	for (i = 0; i < 128; i++) {
 		uint8 x = libxmp_bytes_read8(buf);
 		if (x > 0x7f) {
@@ -214,7 +214,7 @@ static int mod_test(LIBXMP_MM mem, LIBXMP_BYTES buf, char *t, const int start)
 
 	/* validate pattern data in an attempt to catch UNICs with MOD size */
 	for (count = i = 0; i < num_pat; i++) {
-		libxmp_bytes_seek(buf, start + 1084 + 1024 * i, SEEK_SET);
+		libxmp_bytes_seek(buf, start + 1084 + 1024 * i, LIBXMP_BYTES_SEEK_SET);
 		libxmp_bytes_read(buf, pat_buf, 1024);
 		if (validate_pattern(pat_buf) < 0) {
 			D_(D_WARN "pattern %d: error in pattern data", i);
@@ -227,7 +227,7 @@ static int mod_test(LIBXMP_MM mem, LIBXMP_BYTES buf, char *t, const int start)
 	}
 
 found:
-	libxmp_bytes_seek(buf, start + 0, SEEK_SET);
+	libxmp_bytes_seek(buf, start + 0, LIBXMP_BYTES_SEEK_SET);
 	libxmp_read_title(buf, t, 20);
 
 	return 0;
@@ -525,9 +525,9 @@ static int mod_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, cons
 
 	if (0x43c + mod->pat * 4 * mod->chn * 0x40 + smp_size < m->size) {
 		int pos = libxmp_bytes_tell(buf);
-		libxmp_bytes_seek(buf, start + 0x43c + mod->pat * 4 * mod->chn * 0x40 + smp_size, SEEK_SET);
+		libxmp_bytes_seek(buf, start + 0x43c + mod->pat * 4 * mod->chn * 0x40 + smp_size, LIBXMP_BYTES_SEEK_SET);
 		libxmp_bytes_read(buf, idbuffer, 4);
-		libxmp_bytes_seek(buf, start + pos, SEEK_SET);
+		libxmp_bytes_seek(buf, start + pos, LIBXMP_BYTES_SEEK_SET);
 
 		if (!memcmp(idbuffer, "FLEX", 4)) {
 			tracker_id = TRACKER_FLEXTRAX;
@@ -618,7 +618,7 @@ skip_test:
 			}
 		}
 
-		libxmp_bytes_seek(buf, pos, SEEK_SET);
+		libxmp_bytes_seek(buf, pos, LIBXMP_BYTES_SEEK_SET);
 
 		for (j = 0; j < (64 * mod->chn); j++) {
 			event = &EVENT(i, j % mod->chn, j / mod->chn);
@@ -724,7 +724,7 @@ skip_test:
 		if (!memcmp(data, "ADPCM", 5)) {
 			flags |= SAMPLE_FLAG_ADPCM;
 		} else {
-			libxmp_bytes_seek(buf, -5, SEEK_CUR);
+			libxmp_bytes_seek(buf, -5, LIBXMP_BYTES_SEEK_CUR);
 		}
 
 		libxmp_load_sample(mem, buf, m, flags, &mod->xxs[i], NULL);

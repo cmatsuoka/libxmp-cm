@@ -8,6 +8,10 @@
 #define LIBXMP_BYTES_ERANGE	(-2)
 #define LIBXMP_BYTES_EPARM	(-3)
 
+#define LIBXMP_BYTES_SEEK_SET	0
+#define LIBXMP_BYTES_SEEK_CUR	1
+#define LIBXMP_BYTES_SEEK_END	2
+
 #define LIBXMP_BYTES_ERRSIZE	80
 
 typedef struct libxmp_bytes__ {

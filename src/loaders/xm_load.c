@@ -80,7 +80,7 @@ static int load_xm_pattern(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *
 	}
 
 	xph.datasize = libxmp_bytes_read16l(buf);
-	libxmp_bytes_seek(buf, xph.length - headsize, SEEK_CUR);
+	libxmp_bytes_seek(buf, xph.length - headsize, LIBXMP_BYTES_SEEK_CUR);
 
 	r = xph.rows;
 	if (r == 0) {
@@ -385,7 +385,7 @@ static int load_instruments(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data 
 			 * generalization should take care of both cases.
 			 */
 
-			libxmp_bytes_seek(buf, (int)xih.size - XM_INST_HEADER_SIZE, SEEK_CUR);
+			libxmp_bytes_seek(buf, (int)xih.size - XM_INST_HEADER_SIZE, LIBXMP_BYTES_SEEK_CUR);
 
 			continue;
 		}
@@ -402,7 +402,7 @@ static int load_instruments(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data 
 		 */
 		if (xih.size < XM_INST_HEADER_SIZE + XM_INST_SIZE) {
 			memset(&xi, 0, sizeof(struct xm_instrument));
-			libxmp_bytes_seek(buf, xih.size - XM_INST_HEADER_SIZE, SEEK_CUR);
+			libxmp_bytes_seek(buf, xih.size - XM_INST_HEADER_SIZE, LIBXMP_BYTES_SEEK_CUR);
 		} else {
 			libxmp_bytes_read(buf, xi.sample, 96);
 
@@ -432,7 +432,7 @@ static int load_instruments(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data 
 				&xi.v_fade);	/* Volume fadeout */
 
 			/* Skip reserved space */
-			libxmp_bytes_seek(buf, (int)xih.size - (XM_INST_HEADER_SIZE + XM_INST_SIZE), SEEK_CUR);
+			libxmp_bytes_seek(buf, (int)xih.size - (XM_INST_HEADER_SIZE + XM_INST_SIZE), LIBXMP_BYTES_SEEK_CUR);
 
 			/* Envelope */
 			xxi->rls = xi.v_fade << 1;
@@ -670,7 +670,7 @@ static int xm_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const
 	MODULE_INFO();
 
 	/* Honor header size */
-	libxmp_bytes_seek(buf, start + xfh.headersz + 60, SEEK_SET);
+	libxmp_bytes_seek(buf, start + xfh.headersz + 60, LIBXMP_BYTES_SEEK_SET);
 
 	/* XM 1.02/1.03 has a different patterns and instruments order */
 	if (xfh.version <= 0x0103) {
