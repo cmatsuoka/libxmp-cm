@@ -3,13 +3,13 @@
 
 #include <stdio.h>
 #include "common.h"
-#include "buffer.h"
-#include "mem.h"
+#include "bytes.h"
+#include "mm.h"
 
 struct format_loader {
 	const char *name;
-	int (*const test)(LIBXMP_MEM, LIBXMP_BUFFER, char *, const int);
-	int (*const loader)(LIBXMP_MEM, LIBXMP_BUFFER, struct module_data *, const int);
+	int (*const test)(LIBXMP_MM, LIBXMP_BYTES, char *, const int);
+	int (*const loader)(LIBXMP_MM, LIBXMP_BYTES, struct module_data *, const int);
 };
 
 char **format_list(void);

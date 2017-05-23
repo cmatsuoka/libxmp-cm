@@ -34,19 +34,19 @@
 #include "period.h"
 #include "loader.h"
 
-void libxmp_init_instrument(LIBXMP_MEM mem, struct module_data *m)
+void libxmp_init_instrument(LIBXMP_MM mem, struct module_data *m)
 {
 	struct xmp_module *mod = &m->mod;
 
 	if (mod->ins > 0) {
-		mod->xxi = libxmp_mem_calloc(mem, sizeof (struct xmp_instrument) * mod->ins);
+		mod->xxi = libxmp_mm_calloc(mem, sizeof (struct xmp_instrument) * mod->ins);
 	}
 
 	if (mod->smp > 0) {
 		int i;
 
-		mod->xxs = libxmp_mem_calloc(mem, sizeof (struct xmp_sample) * mod->smp);
-		m->xtra = libxmp_mem_calloc(mem, sizeof (struct extra_sample_data) * mod->smp);
+		mod->xxs = libxmp_mm_calloc(mem, sizeof (struct xmp_sample) * mod->smp);
+		m->xtra = libxmp_mm_calloc(mem, sizeof (struct extra_sample_data) * mod->smp);
 
 		for (i = 0; i < mod->smp; i++) {
 			m->xtra[i].c5spd = m->c4rate;
@@ -54,43 +54,43 @@ void libxmp_init_instrument(LIBXMP_MEM mem, struct module_data *m)
 	}
 }
 
-void libxmp_alloc_subinstrument(LIBXMP_MEM mem, struct xmp_module *mod, int i, int num)
+void libxmp_alloc_subinstrument(LIBXMP_MM mem, struct xmp_module *mod, int i, int num)
 {
 	if (num == 0) {
 		return;
 	}
 
-	mod->xxi[i].sub = libxmp_mem_calloc(mem, sizeof (struct xmp_subinstrument) * num);
+	mod->xxi[i].sub = libxmp_mm_calloc(mem, sizeof (struct xmp_subinstrument) * num);
 }
 
-void libxmp_init_pattern(LIBXMP_MEM mem, struct xmp_module *mod)
+void libxmp_init_pattern(LIBXMP_MM mem, struct xmp_module *mod)
 {
-	mod->xxt = libxmp_mem_calloc(mem, sizeof (struct xmp_track *) * mod->trk);
-	mod->xxp = libxmp_mem_calloc(mem, sizeof (struct xmp_pattern *) * mod->pat);
+	mod->xxt = libxmp_mm_calloc(mem, sizeof (struct xmp_track *) * mod->trk);
+	mod->xxp = libxmp_mm_calloc(mem, sizeof (struct xmp_pattern *) * mod->pat);
 }
 
-void libxmp_alloc_pattern(LIBXMP_MEM mem, struct xmp_module *mod, int num)
+void libxmp_alloc_pattern(LIBXMP_MM mem, struct xmp_module *mod, int num)
 {
 	/* Sanity check */
 	if (num < 0 || num >= mod->pat || mod->xxp[num] != NULL) {
-		libxmp_mem_throw(mem, LIBXMP_MEM_EPARAM, "pattern %d: invalid allocation parameters", num);
+		libxmp_mm_throw(mem, LIBXMP_MM_EPARAM, "pattern %d: invalid allocation parameters", num);
 	}
 
-	mod->xxp[num] = libxmp_mem_calloc(mem, sizeof (struct xmp_pattern) + sizeof (int) * (mod->chn - 1));
+	mod->xxp[num] = libxmp_mm_calloc(mem, sizeof (struct xmp_pattern) + sizeof (int) * (mod->chn - 1));
 }
 
-void libxmp_alloc_track(LIBXMP_MEM mem, struct xmp_module *mod, int num, int rows)
+void libxmp_alloc_track(LIBXMP_MM mem, struct xmp_module *mod, int num, int rows)
 {
 	/* Sanity check */
 	if (num < 0 || num >= mod->trk || mod->xxt[num] != NULL || rows <= 0) {
-		libxmp_mem_throw(mem, LIBXMP_MEM_EPARAM, "track %d: invalid allocation parameters", num);
+		libxmp_mm_throw(mem, LIBXMP_MM_EPARAM, "track %d: invalid allocation parameters", num);
 	}
 
-	mod->xxt[num] = libxmp_mem_calloc(mem, sizeof (struct xmp_track) + sizeof (struct xmp_event) * (rows - 1));
+	mod->xxt[num] = libxmp_mm_calloc(mem, sizeof (struct xmp_track) + sizeof (struct xmp_event) * (rows - 1));
 	mod->xxt[num]->rows = rows;
 }
 
-void libxmp_alloc_tracks_in_pattern(LIBXMP_MEM mem, struct xmp_module *mod, int num)
+void libxmp_alloc_tracks_in_pattern(LIBXMP_MM mem, struct xmp_module *mod, int num)
 {
 	int i;
 
@@ -104,11 +104,11 @@ void libxmp_alloc_tracks_in_pattern(LIBXMP_MEM mem, struct xmp_module *mod, int 
 	}
 }
 
-void libxmp_alloc_pattern_tracks(LIBXMP_MEM mem, struct xmp_module *mod, int num, int rows)
+void libxmp_alloc_pattern_tracks(LIBXMP_MM mem, struct xmp_module *mod, int num, int rows)
 {
 	/* Sanity check */
 	if (rows < 0 || rows > 256) {
-		libxmp_mem_throw(mem, LIBXMP_MEM_EPARAM, "pattern %d tracks: can't allocate %d rows", num, rows);
+		libxmp_mm_throw(mem, LIBXMP_MM_EPARAM, "pattern %d tracks: can't allocate %d rows", num, rows);
 	}
 
 	libxmp_alloc_pattern(mem, mod, num);
@@ -117,9 +117,9 @@ void libxmp_alloc_pattern_tracks(LIBXMP_MEM mem, struct xmp_module *mod, int num
 }
 
 /* Sample number adjustment by Vitamin/CAIG */
-struct xmp_sample *libxmp_realloc_samples(LIBXMP_MEM mem, struct xmp_sample *buf, int *size, int new_size)
+struct xmp_sample *libxmp_realloc_samples(LIBXMP_MM mem, struct xmp_sample *buf, int *size, int new_size)
 {
-	buf = libxmp_mem_realloc(mem, buf, sizeof (struct xmp_sample) * new_size);
+	buf = libxmp_mm_realloc(mem, buf, sizeof (struct xmp_sample) * new_size);
 	if (new_size > *size) {
 		memset(buf + *size, 0, sizeof (struct xmp_sample) * (new_size - *size));
 	}
@@ -153,7 +153,7 @@ char *libxmp_copy_adjust(char *s, uint8 *r, int n)
 	return s;
 }
 
-void libxmp_read_title(LIBXMP_BUFFER buf, char *t, int s)
+void libxmp_read_title(LIBXMP_BYTES buf, char *t, int s)
 {
 	uint8 name[XMP_NAME_SIZE];
 
@@ -166,7 +166,7 @@ void libxmp_read_title(LIBXMP_BUFFER buf, char *t, int s)
 
 	memset(t, 0, s + 1);
 
-	libxmp_buffer_read(buf, name, s);
+	libxmp_bytes_read(buf, name, s);
 	name[s] = 0;
 	libxmp_copy_adjust(t, name, s);
 }

@@ -195,21 +195,21 @@ static void unroll_loop(struct xmp_sample *xxs)
 }
 
 
-int libxmp_load_sample(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m, int flags, struct xmp_sample *xxs, const void *buffer)
+void libxmp_load_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, int flags, struct xmp_sample *xxs, const void *buffer)
 {
 	int bytelen, extralen, unroll_extralen, i;
 
 #ifndef LIBXMP_CORE_PLAYER
 	/* Adlib FM patches */
 	if (flags & SAMPLE_FLAG_ADLIB) {
-		return 0;
+		return;
 	}
 #endif
 
 	/* Empty or invalid samples
 	 */
 	if (xxs->len <= 0) {
-		return 0;
+		return;
 	}
 
 	/* Skip sample loading
@@ -219,9 +219,9 @@ int libxmp_load_sample(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m,
 	 */
 	if (xxs->len > MAX_SAMPLE_SIZE || (m && m->smpctl & XMP_SMPCTL_SKIP)) {
 		if (~flags & SAMPLE_FLAG_NOLOAD) {
-			libxmp_buffer_seek(buf, xxs->len, SEEK_CUR);
+			libxmp_bytes_seek(buf, xxs->len, SEEK_CUR);
 		}
-		return 0;
+		return;
 	}
 
 	/* Loop parameters sanity check
@@ -268,7 +268,7 @@ int libxmp_load_sample(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m,
 	}
 
 	/* add guard bytes before the buffer for higher order interpolation */
-	xxs->data = libxmp_mem_alloc(mem, bytelen + extralen + unroll_extralen + 4);
+	xxs->data = libxmp_mm_alloc(mem, bytelen + extralen + unroll_extralen + 4);
 
 	*(uint32 *)xxs->data = 0;
 	xxs->data += 4;
@@ -281,14 +281,14 @@ int libxmp_load_sample(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m,
 		int x2 = (bytelen + 1) >> 1;
 		char table[16];
 
-		libxmp_buffer_read(buf, table, 16);
-		libxmp_buffer_read(buf, xxs->data + x2, x2);
+		libxmp_bytes_read(buf, table, 16);
+		libxmp_bytes_read(buf, xxs->data + x2, x2);
 
 		adpcm4_decoder((uint8 *)xxs->data + x2, (uint8 *)xxs->data, table, bytelen);
 	} else
 #endif
 	{
-		int x = libxmp_buffer_try_read(buf, xxs->data, bytelen);
+		int x = libxmp_bytes_try_read(buf, xxs->data, bytelen);
 		if (x != bytelen) {
 			D_(D_WARN "short read (%d) in sample load", x - bytelen);
 			memset(xxs->data + x, 0, bytelen - x);
@@ -396,6 +396,4 @@ int libxmp_load_sample(LIBXMP_MEM mem, LIBXMP_BUFFER buf, struct module_data *m,
 			}
 		}
 	}
-
-	return 0;
 }

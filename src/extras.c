@@ -31,7 +31,7 @@
  * Channel extras
  */
 
-void libxmp_new_channel_extras(LIBXMP_MEM mem, struct context_data *ctx, struct channel_data *xc)
+void libxmp_new_channel_extras(LIBXMP_MM mem, struct context_data *ctx, struct channel_data *xc)
 {
 	struct module_data *m = &ctx->m;
 

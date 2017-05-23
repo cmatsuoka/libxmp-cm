@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "mem.h"
+#include "mm.h"
 #include "debug.h"
 
 #define uthash_fatal(msg) goto err_uthash
@@ -34,57 +34,57 @@ struct mem_item {
 	UT_hash_handle hh;
 };
 
-struct libxmp_mem {
+struct libxmp_mm {
 	jmp_buf jmp;
-	char _err[LIBXMP_MEM_ERRSIZE];
+	char _err[LIBXMP_MM_ERRSIZE];
 	struct mem_item *hash;
 };
 
-LIBXMP_MEM libxmp_mem_new()
+LIBXMP_MM libxmp_mm_new()
 {
-	struct libxmp_mem *m;
+	struct libxmp_mm *m;
 
-	if ((m = calloc(sizeof (struct libxmp_mem), 1)) == NULL) {
+	if ((m = calloc(sizeof (struct libxmp_mm), 1)) == NULL) {
 		return NULL;
 	}
 
 	D_(D_WARN "MEM=%p", m);
 
-	return (LIBXMP_MEM)m;
+	return (LIBXMP_MM)m;
 }
 
-void libxmp_mem_release(LIBXMP_MEM m__)
+void libxmp_mm_release(LIBXMP_MM m__)
 {
 	D_(D_WARN "RELEASE MEM=%p", m__);
 
-	libxmp_mem_clear(m__);
+	libxmp_mm_clear(m__);
 	free(m__);
 }
 
-void libxmp_mem_throw(LIBXMP_MEM m__, int val, char *fmt, ...)
+void libxmp_mm_throw(LIBXMP_MM m__, int val, char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	vsnprintf(m__->_err, LIBXMP_MEM_ERRSIZE, fmt, ap);
+	vsnprintf(m__->_err, LIBXMP_MM_ERRSIZE, fmt, ap);
 	va_end(ap);
 
 	longjmp(m__->jmp, val);
 }
 
-void *libxmp_mem_calloc(LIBXMP_MEM m__, size_t size)
+void *libxmp_mm_calloc(LIBXMP_MM m__, size_t size)
 {
 	void *ptr;
 
-	ptr = libxmp_mem_alloc(m__, size);
+	ptr = libxmp_mm_alloc(m__, size);
 	memset(ptr, 0, size);
 
 	return ptr;
 }
 
-void *libxmp_mem_alloc(LIBXMP_MEM m__, size_t size)
+void *libxmp_mm_alloc(LIBXMP_MM m__, size_t size)
 {
-	struct libxmp_mem *mem = (struct libxmp_mem *)m__;
+	struct libxmp_mm *mem = (struct libxmp_mm *)m__;
 	struct mem_item *item;
 
 	D_(D_INFO "size=%ld (hash=%p)", (long)size, mem->hash);
@@ -107,14 +107,14 @@ void *libxmp_mem_alloc(LIBXMP_MEM m__, size_t size)
     err2:
 	free(item);
     err:
-	libxmp_mem_throw(m__, LIBXMP_MEM_ENOMEM, "%s:%d: memory allocation error (size %ld)",
+	libxmp_mm_throw(m__, LIBXMP_MM_ENOMEM, "%s:%d: memory allocation error (size %ld)",
 		__FUNCTION__, __LINE__, (long)size);
 	return NULL;
 }
 
-void *libxmp_mem_realloc(LIBXMP_MEM m__, void *ptr, size_t size)
+void *libxmp_mm_realloc(LIBXMP_MM m__, void *ptr, size_t size)
 {
-	struct libxmp_mem *mem = (struct libxmp_mem *)m__;
+	struct libxmp_mm *mem = (struct libxmp_mm *)m__;
 	struct mem_item *item;
 
 	D_(D_INFO "size=%ld (hash=%p)", (long)size, mem->hash);
@@ -130,14 +130,14 @@ void *libxmp_mem_realloc(LIBXMP_MEM m__, void *ptr, size_t size)
 	return item->ptr;
 
     err:
-	libxmp_mem_throw(m__, LIBXMP_MEM_ENOMEM, "%s:%d: memory reallocation error (size %ld)",
+	libxmp_mm_throw(m__, LIBXMP_MM_ENOMEM, "%s:%d: memory reallocation error (size %ld)",
 		__FUNCTION__, __LINE__, (long)size);
 	return NULL;
 }
 
-void libxmp_mem_free(LIBXMP_MEM m__, void *ptr)
+void libxmp_mm_free(LIBXMP_MM m__, void *ptr)
 {
-	struct libxmp_mem *mem = (struct libxmp_mem *)m__;
+	struct libxmp_mm *mem = (struct libxmp_mm *)m__;
 	struct mem_item *item;
 
 	D_(D_INFO "ptr=%p", ptr);
@@ -149,9 +149,9 @@ void libxmp_mem_free(LIBXMP_MEM m__, void *ptr)
 	free(item);
 }
 
-void libxmp_mem_clear(LIBXMP_MEM m__)
+void libxmp_mm_clear(LIBXMP_MM m__)
 {
-	struct libxmp_mem *mem = (struct libxmp_mem *)m__;
+	struct libxmp_mm *mem = (struct libxmp_mm *)m__;
 	struct mem_item *item, *tmp;
 
 	D_(D_WARN "clear allocations (ptr=%p)", mem->hash);

@@ -32,7 +32,7 @@
 #endif
 
 #include "format.h"
-#include "buffer.h"
+#include "bytes.h"
 #include "list.h"
 
 #ifndef LIBXMP_CORE_PLAYER
@@ -60,13 +60,13 @@ int  libxmp_prepare_scan(struct context_data *);
 
 #define BUFLEN 16384
 
-static void set_md5sum(LIBXMP_BUFFER buf, unsigned char *digest)
+static void set_md5sum(LIBXMP_BYTES buf, unsigned char *digest)
 {
 /*
 	MD5_CTX ctx;
 	long n, size;
 
-	size = libxmp_buffer_size(buf);
+	size = libxmp_bytes_size(buf);
 
 	if (size <= 0) {
 		memset(digest, 0, 16);
@@ -86,24 +86,24 @@ static void set_md5sum(LIBXMP_BUFFER buf, unsigned char *digest)
 
 int xmp_test_module(void *src, long size, struct xmp_test_info *info)
 {
-	LIBXMP_BUFFER buf;
-	LIBXMP_MEM mem;
+	LIBXMP_BYTES buf;
+	LIBXMP_MM mem;
 	char name[XMP_NAME_SIZE];
 	int i;
 	int ret = -XMP_ERROR_SYSTEM;
 
-	if ((buf = libxmp_buffer_new(src, size)) == NULL) {
+	if ((buf = libxmp_bytes_new(src, size)) == NULL) {
 		goto err;
 	}
-	if ((ret = libxmp_buffer_catch(buf)) != 0) {
-		D_(D_CRIT "%s", libxmp_buffer_error(buf));
+	if ((ret = libxmp_bytes_catch(buf)) != 0) {
+		D_(D_CRIT "%s", libxmp_bytes_error(buf));
 		goto err2;
 	}
-	if ((mem = libxmp_mem_new()) == NULL) {
+	if ((mem = libxmp_mm_new()) == NULL) {
 		goto err2;
 	}
-	if (libxmp_mem_catch(mem) != 0) {
-		D_(D_CRIT "%s", libxmp_mem_error(mem));
+	if (libxmp_mm_catch(mem) != 0) {
+		D_(D_CRIT "%s", libxmp_mm_error(mem));
 		ret = -XMP_ERROR_SYSTEM;
 		goto err3;
 	}
@@ -115,7 +115,7 @@ int xmp_test_module(void *src, long size, struct xmp_test_info *info)
 
 	for (i = 0; format_loader[i] != NULL; i++) {
 
-		libxmp_buffer_seek(buf, 0, SEEK_SET);
+		libxmp_bytes_seek(buf, 0, SEEK_SET);
 
 		if (format_loader[i]->test(mem, buf, name, 0) == 0) {
 			int is_prowizard = 0;
@@ -148,19 +148,19 @@ int xmp_test_module(void *src, long size, struct xmp_test_info *info)
 	}
 
     err3:
-	libxmp_mem_release(mem);
+	libxmp_mm_release(mem);
     err2:
-	libxmp_buffer_release(buf);
+	libxmp_bytes_release(buf);
     err:
 	return ret;
 }
 
-static int load_module(xmp_context opaque, LIBXMP_BUFFER buf)
+static int load_module(xmp_context opaque, LIBXMP_BYTES buf)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
-	LIBXMP_MEM mem = m->mem;
+	LIBXMP_MM mem = m->mem;
 	int i, j, ret;
 	int test_result, load_result;
 
@@ -169,9 +169,9 @@ static int load_module(xmp_context opaque, LIBXMP_BUFFER buf)
 	D_(D_WARN "load");
 	test_result = load_result = -1;
 	for (i = 0; format_loader[i] != NULL; i++) {
-		libxmp_buffer_seek(buf, 0, SEEK_SET);
+		libxmp_bytes_seek(buf, 0, SEEK_SET);
 
-		if (libxmp_buffer_catch(buf) != 0) {
+		if (libxmp_bytes_catch(buf) != 0) {
 			/* Go to next format if access fault testing file */
 			continue;
 		}
@@ -179,11 +179,11 @@ static int load_module(xmp_context opaque, LIBXMP_BUFFER buf)
 		D_(D_WARN "test %s", format_loader[i]->name);
 		test_result = format_loader[i]->test(mem, buf, NULL, 0);
 		if (test_result == 0) {
-			libxmp_buffer_seek(buf, 0, SEEK_SET);
-			if ((ret = libxmp_buffer_catch(buf)) != 0) {
-				D_(D_CRIT "exception loading module: %s", libxmp_buffer_error(buf));
+			libxmp_bytes_seek(buf, 0, SEEK_SET);
+			if ((ret = libxmp_bytes_catch(buf)) != 0) {
+				D_(D_CRIT "exception loading module: %s", libxmp_bytes_error(buf));
 				switch (ret) {
-				case LIBXMP_BUFFER_EINVAL:
+				case LIBXMP_BYTES_EINVAL:
 					ret = -XMP_ERROR_SYSTEM;
 					break;
 				default:
@@ -192,10 +192,10 @@ static int load_module(xmp_context opaque, LIBXMP_BUFFER buf)
 				}
 				return ret;
 			}
-			if ((ret = libxmp_mem_catch(mem)) != 0) {
-				D_(D_CRIT "exception loading module: %s", libxmp_mem_error(mem));
+			if ((ret = libxmp_mm_catch(mem)) != 0) {
+				D_(D_CRIT "exception loading module: %s", libxmp_mm_error(mem));
 				switch (ret) {
-				case LIBXMP_MEM_ENOMEM:
+				case LIBXMP_MM_ENOMEM:
 					ret = -XMP_ERROR_SYSTEM;
 					break;
 				default:
@@ -286,10 +286,10 @@ int xmp_load_module(xmp_context opaque, void *src, long size)
 #ifndef LIBXMP_CORE_PLAYER
 	struct module_data *m = &ctx->m;
 #endif
-	LIBXMP_BUFFER buf;
+	LIBXMP_BYTES buf;
 	int ret;
 
-	if ((buf = libxmp_buffer_new(src, size)) == NULL) {
+	if ((buf = libxmp_bytes_new(src, size)) == NULL) {
 		return -XMP_ERROR_SYSTEM;
 	}
 		
@@ -303,7 +303,7 @@ int xmp_load_module(xmp_context opaque, void *src, long size)
 
 	ret = load_module(opaque, buf);
 
-	libxmp_buffer_release(buf);
+	libxmp_bytes_release(buf);
 
 	return ret;
 }
@@ -312,7 +312,7 @@ void xmp_release_module(xmp_context opaque)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct module_data *m = &ctx->m;
-	LIBXMP_MEM mem = m->mem;
+	LIBXMP_MM mem = m->mem;
 
 	/* can't test this here, we must call release_module to clean up
 	 * load errors
@@ -328,7 +328,7 @@ void xmp_release_module(xmp_context opaque)
 
 	D_(D_INFO "Freeing memory");
 
-	libxmp_mem_clear(mem);
+	libxmp_mm_clear(mem);
 }
 
 void xmp_scan_module(xmp_context opaque)
