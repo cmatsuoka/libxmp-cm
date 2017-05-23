@@ -10,7 +10,7 @@ TEST(test_loader_mod_noterange2)
 	f = fopen("data/format_mod_noterange2.data", "r");
 
 	opaque = xmp_create_context();
-	ret = xmp_load_module(opaque, "data/m/ZONE-2A.mod");
+	ret = load_module(opaque, "data/m/ZONE-2A.mod");
 	fail_unless(ret == 0, "module load");
 
 	xmp_get_module_info(opaque, &info);

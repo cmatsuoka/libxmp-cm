@@ -237,7 +237,11 @@ PLAYER		= read_event scan period_amiga period_mod_range pan \
 		  invalid_period invalid_mod_length invalid_mod_channels \
 		  it_noteoff_nosuck mdl_period
 
-LOADER		= ust ac1d unic unic2 nst flt flt8 wow mtm it it_oldins \
+LOADER		= it it_oldins \
+		  xm102 xm_adpcm xm_xmlite xm_short \
+		  mod_adpcm4 mod_noterange mod_noterange2 mod_scrm mod_invalid
+
+LOADER_OLD		= ust ac1d unic unic2 nst flt flt8 wow mtm it it_oldins \
 		  xm102 j2b okt 669 s3m stm stx sfx masi imf ptm far asylum \
 		  dsmi stim pt36 psm rtm ice dbm mdl0 mdl mgt liq liq_no \
 		  emod chiptracker gdm dtm abk mfp np1 np2 np3 nru p60 crb \
@@ -310,7 +314,8 @@ API_TESTS	= $(addprefix api_,$(API))
 
 PROBLEM_TESTS	= $(addprefix module_,$(PROBLEMATIC))
 
-TESTS		= $(OPENMPT_XM_TESTS) \
+TESTS		= $(LOADER_TESTS) \
+		  $(OPENMPT_XM_TESTS) \
 		  $(OPENMPT_IT_TESTS) \
 		  $(OPENMPT_S3M_TESTS) \
 		  $(OPENMPT_MOD_TESTS)
@@ -383,7 +388,7 @@ gen_mixer_data: gen_mixer_data.o
 #
 
 check: $(TEST_PATH)/all_tests.c $(TEST_PATH)/libxmp-tests
-	cd $(TEST_PATH); LD_LIBRARY_PATH=../lib DYLD_LIBRARY_PATH=../lib LIBRARY_PATH=../lib:$$LIBRARY_PATH PATH=$$PATH:../lib valgrind ./libxmp-tests
+	cd $(TEST_PATH); LD_LIBRARY_PATH=../lib DYLD_LIBRARY_PATH=../lib LIBRARY_PATH=../lib:$$LIBRARY_PATH PATH=$$PATH:../lib ./libxmp-tests
 
 $(TEST_PATH)/libxmp-tests: $(T_OBJS)
 	@CMD='$(LD) -o $@ $(T_OBJS) $(LIBS) -L../lib -lxmp'; \

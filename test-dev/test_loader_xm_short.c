@@ -10,7 +10,7 @@ TEST(test_loader_xm_short)
 	f = fopen("data/format_xm_short.data", "r");
 
 	opaque = xmp_create_context();
-	ret = xmp_load_module(opaque, "data/m/JUHO - Ihana paiva.xm");
+	ret = load_module(opaque, "data/m/JUHO - Ihana paiva.xm");
 	fail_unless(ret == 0, "module load");
 
 	xmp_get_module_info(opaque, &info);

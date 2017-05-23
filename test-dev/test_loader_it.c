@@ -10,7 +10,7 @@ TEST(test_loader_it)
 	f = fopen("data/format_it.data", "r");
 
 	opaque = xmp_create_context();
-	ret = xmp_load_module(opaque, "data/m/4th_Symmetriad.it");
+	ret = load_module(opaque, "data/m/4th_Symmetriad.it");
 	fail_unless(ret == 0, "module load");
 
 	xmp_get_module_info(opaque, &info);

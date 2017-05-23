@@ -10,7 +10,7 @@ TEST(test_loader_xm_adpcm)
 	f = fopen("data/format_xm_adpcm.data", "r");
 
 	opaque = xmp_create_context();
-	ret = xmp_load_module(opaque, "data/m/MRHPx-HBTN LUCiFER.xm");
+	ret = load_module(opaque, "data/m/MRHPx-HBTN LUCiFER.xm");
 	fail_unless(ret == 0, "module load");
 
 	xmp_get_module_info(opaque, &info);

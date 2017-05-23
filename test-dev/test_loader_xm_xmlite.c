@@ -10,7 +10,7 @@ TEST(test_loader_xm_xmlite)
 	f = fopen("data/format_xm_xmlite.data", "r");
 
 	opaque = xmp_create_context();
-	ret = xmp_load_module(opaque, "data/m/ZALZA - Tekilla groove.xm");
+	ret = load_module(opaque, "data/m/ZALZA - Tekilla groove.xm");
 	fail_unless(ret == 0, "module load");
 
 	xmp_get_module_info(opaque, &info);

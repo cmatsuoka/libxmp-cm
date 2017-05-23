@@ -10,7 +10,7 @@ TEST(test_loader_mod_noterange)
 	f = fopen("data/format_mod_noterange.data", "r");
 
 	opaque = xmp_create_context();
-	ret = xmp_load_module(opaque, "data/m/APATHY.MOD");
+	ret = load_module(opaque, "data/m/APATHY.MOD");
 	fail_unless(ret == 0, "module load");
 
 	xmp_get_module_info(opaque, &info);

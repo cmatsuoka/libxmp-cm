@@ -10,7 +10,7 @@ TEST(test_loader_xm102)
 	f = fopen("data/format_xm102.data", "r");
 
 	opaque = xmp_create_context();
-	ret = xmp_load_module(opaque, "data/m/dontyou.xm");
+	ret = load_module(opaque, "data/m/dontyou.xm");
 	fail_unless(ret == 0, "module load");
 
 	xmp_get_module_info(opaque, &info);
