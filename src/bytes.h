@@ -14,10 +14,10 @@
 #define LIBXMP_BYTES_SEEK_END	2
 
 typedef struct libxmp_bytes__ {
-	LIBXMP_EXCEPTION *ex;
+	LIBXMP_EXCEPTION ex;
 } *LIBXMP_BYTES;
 
-LIBXMP_BYTES	libxmp_bytes_new	(LIBXMP_EXCEPTION *, void *, size_t);
+LIBXMP_BYTES	libxmp_bytes_new	(LIBXMP_EXCEPTION, void *, size_t);
 void		libxmp_bytes_release	(LIBXMP_BYTES);
 int		libxmp_bytes_left	(LIBXMP_BYTES);
 int		libxmp_bytes_scan	(LIBXMP_BYTES, char *, ...);

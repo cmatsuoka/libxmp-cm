@@ -28,7 +28,7 @@
 #include "debug.h"
 
 struct libxmp_bytes {
-	LIBXMP_EXCEPTION *ex;
+	LIBXMP_EXCEPTION ex;
 	uint8 *start;
 	uint8 *pos;
 	uint8 *end;
@@ -36,7 +36,7 @@ struct libxmp_bytes {
 
 #define B(b) ((struct libxmp_bytes *)(b))
 
-LIBXMP_BYTES libxmp_bytes_new(LIBXMP_EXCEPTION *ex, void *p, size_t size)
+LIBXMP_BYTES libxmp_bytes_new(LIBXMP_EXCEPTION ex, void *p, size_t size)
 {
 	struct libxmp_bytes *b;
 

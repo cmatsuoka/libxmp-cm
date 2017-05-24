@@ -26,7 +26,27 @@
 #include "exception.h"
 #include "debug.h"
 
-void libxmp_exception_throw(LIBXMP_EXCEPTION *ex, int val, char *fmt, ...)
+LIBXMP_EXCEPTION libxmp_exception_new()
+{
+	struct libxmp_exception *ex;
+
+	if ((ex = calloc(sizeof (struct libxmp_exception__), 1)) == NULL) {
+		return NULL;
+	}
+
+	D_(D_WARN "EXCEPTION=%p", ex);
+
+	return (LIBXMP_EXCEPTION)ex;
+}
+
+void libxmp_exception_release(LIBXMP_EXCEPTION ex)
+{
+	D_(D_WARN "RELEASE EXCEPTION=%p", ex);
+
+	free(ex);
+}
+
+void libxmp_exception_throw(LIBXMP_EXCEPTION ex, int val, char *fmt, ...)
 {
 	va_list ap;
 

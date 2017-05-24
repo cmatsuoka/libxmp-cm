@@ -42,14 +42,19 @@ xmp_context xmp_create_context()
 		goto err;
 	}
 
-	/* player memory */
-	if ((ctx->p.mem = libxmp_mm_new(&ctx->ex)) == NULL) {
+	/* exception handler */
+	if ((ctx->ex = libxmp_exception_new()) == NULL) {
 		goto err2;
 	}
 
+	/* player memory */
+	if ((ctx->p.mem = libxmp_mm_new(ctx->ex)) == NULL) {
+		goto err3;
+	}
+
 	/* module memory */
-	if ((ctx->m.mem = libxmp_mm_new(&ctx->ex)) == NULL) {
-		goto err2;
+	if ((ctx->m.mem = libxmp_mm_new(ctx->ex)) == NULL) {
+		goto err4;
 	}
 
 	ctx->state = XMP_STATE_UNLOADED;
@@ -58,6 +63,10 @@ xmp_context xmp_create_context()
 
 	return (xmp_context)ctx;
 
+    err4:
+	libxmp_mm_release(ctx->p.mem);
+    err3:
+	libxmp_exception_release(ctx->ex);
     err2:
 	free(ctx);
     err:
@@ -74,6 +83,7 @@ void xmp_free_context(xmp_context opaque)
 
 	libxmp_mm_release(ctx->m.mem);
 	libxmp_mm_release(ctx->p.mem);
+	libxmp_exception_release(ctx->ex);
 	free(opaque);
 }
 

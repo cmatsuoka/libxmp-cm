@@ -37,11 +37,11 @@ struct mem_item {
 };
 
 struct libxmp_mm {
-	LIBXMP_EXCEPTION *ex;
+	LIBXMP_EXCEPTION ex;
 	struct mem_item *hash;
 };
 
-LIBXMP_MM libxmp_mm_new(LIBXMP_EXCEPTION *ex)
+LIBXMP_MM libxmp_mm_new(LIBXMP_EXCEPTION ex)
 {
 	struct libxmp_mm *m;
 

@@ -8,10 +8,10 @@
 #define LIBXMP_MM_EPARMS	(-201)
 
 typedef struct libxmp_mm__ {
-	LIBXMP_EXCEPTION *ex;
+	LIBXMP_EXCEPTION ex;
 } *LIBXMP_MM;
 
-LIBXMP_MM	libxmp_mm_new		(LIBXMP_EXCEPTION *);
+LIBXMP_MM	libxmp_mm_new		(LIBXMP_EXCEPTION);
 void		libxmp_mm_release	(LIBXMP_MM);
 void		*libxmp_mm_calloc	(LIBXMP_MM, size_t);
 void		*libxmp_mm_alloc	(LIBXMP_MM, size_t);

@@ -11,11 +11,13 @@
 typedef struct libxmp_exception__ {
 	jmp_buf jmp;
 	char _err[LIBXMP_EXCEPTION_ERRSIZE];
-} LIBXMP_EXCEPTION;
+} *LIBXMP_EXCEPTION;
 
 #define libxmp_exception_catch(ex) setjmp((ex)->jmp)
 #define libxmp_exception_error(ex) ((ex)->_err)
 
-void		libxmp_exception_throw		(LIBXMP_EXCEPTION *, int, char *, ...);
+LIBXMP_EXCEPTION libxmp_exception_new		(void);
+void		libxmp_exception_release	(LIBXMP_EXCEPTION);
+void		libxmp_exception_throw		(LIBXMP_EXCEPTION, int, char *, ...);
 
 #endif
