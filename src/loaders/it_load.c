@@ -266,7 +266,7 @@ static void fix_name(uint8 *s, int l)
 	}
 }
 
-static void read_envelope(LIBXMP_BYTES buf, struct xmp_envelope *ei, struct it_envelope *env)
+static int read_envelope(LIBXMP_BYTES buf, struct xmp_envelope *ei, struct it_envelope *env)
 {
 	int i;
 
@@ -277,7 +277,7 @@ static void read_envelope(LIBXMP_BYTES buf, struct xmp_envelope *ei, struct it_e
 	if (env->num >= XMP_MAX_ENV_POINTS) {
 		env->flg = 0;
 		env->num = 0;
-		libxmp_exception_throw(buf->ex, LIBXMP_BYTES_EPARMS, "invalid envelope size");
+		return -1;
 	}
 
 	for (i = 0; i < 25; i++) {
@@ -312,6 +312,8 @@ static void read_envelope(LIBXMP_BYTES buf, struct xmp_envelope *ei, struct it_e
 	} else {
 		ei->flg &= ~XMP_ENVELOPE_ON;
 	}
+
+	return 0;
 }
 
 static void identify_tracker(struct module_data *m, struct it_file_header *ifh)
@@ -414,7 +416,7 @@ static int load_old_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_in
 		&i1h.name, NULL, &i1h.keys, &i1h.epoint, &i1h.enode);
 
 	if (i1h.magic != MAGIC_IMPI) {
-		libxmp_exception_throw(buf->ex, LIBXMP_BYTES_EPARMS, "bad instrument magic");
+		return -1;
 	}
 
 	fix_name(i1h.name, 26);
@@ -508,7 +510,7 @@ static int load_old_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_in
 	return 0;
 }
 
-static void load_new_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_instrument *xxi)
+static int load_new_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_instrument *xxi)
 {
 	int inst_map[120], inst_rmap[XMP_MAX_KEYS];
 	struct it_instrument2_header i2h;
@@ -522,7 +524,7 @@ static void load_new_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_i
 		&i2h.ifc, &i2h.ifr, &i2h.mch, &i2h.mpr, &i2h.mbnk, &i2h.keys);
 
 	if (i2h.magic != MAGIC_IMPI) {
-		libxmp_exception_throw(buf->ex, LIBXMP_BYTES_EPARMS, "bad instrument magic");
+		return -1;
 	}
 
 	/* Sanity check */
@@ -539,9 +541,15 @@ static void load_new_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_i
 
 	/* Envelopes */
 
-	read_envelope(buf, &xxi->aei, &env);
-	read_envelope(buf, &xxi->pei, &env);
-	read_envelope(buf, &xxi->fei, &env);
+	if (read_envelope(buf, &xxi->aei, &env) < 0) {
+		return -1;
+	}
+	if (read_envelope(buf, &xxi->pei, &env) < 0) {
+		return -1;
+	}
+	if (read_envelope(buf, &xxi->fei, &env) < 0) {
+		return -1;
+	}
 
 	if (xxi->pei.flg & XMP_ENVELOPE_ON) {
 		for (j = 0; j < xxi->pei.npt; j++) {
@@ -624,9 +632,11 @@ static void load_new_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_i
 	   xxi->pei.flg & XMP_ENVELOPE_ON ? 'P' : '-',
 	   env.flg & 0x01 ? env.flg & 0x80 ? 'F' : 'P' : '-',
 	   xxi->nsm, i2h.ifc, i2h.ifr);
+
+	return 0;
 }
 
-static void load_it_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, int i, int start, int sample_mode)
+static int load_it_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, int i, int start, int sample_mode)
 {
 	struct it_sample_header ish;
 	struct xmp_module *mod = &m->mod;
@@ -642,7 +652,7 @@ static void load_it_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *
 	 * load correctly (both IT 2.04)
 	 */
 	if (ish.magic != MAGIC_IMPS) {
-		return;
+		return 0;
 	}
 
 	xxs = &mod->xxs[i];
@@ -662,7 +672,7 @@ static void load_it_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *
 
 	/* Sanity check */
 	if (xxs->len > MAX_SAMPLE_SIZE) {
-		libxmp_exception_throw(buf->ex, LIBXMP_BYTES_EPARMS, "invalid sample size");
+		return -1;
 	}
 
 	xxs->lps = ish.loopbeg;
@@ -785,6 +795,8 @@ static void load_it_sample(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *
 			libxmp_load_sample(mem, buf, m, cvt, &mod->xxs[i], NULL);
 		}
 	}
+
+	return 0;
 }
 
 static int load_it_pattern(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, int i, int new_fx)
@@ -1048,11 +1060,15 @@ static int it_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const
 		if (!sample_mode && ifh.cmwt >= 0x200) {
 			/* New instrument format */
 			libxmp_bytes_seek(buf, start + pp_ins[i], LIBXMP_BYTES_SEEK_SET);
-			load_new_it_instrument(mem, buf, xxi);
+			if (load_new_it_instrument(mem, buf, xxi) < 0) {
+				return -1;
+			}
 		} else if (!sample_mode) {
 			/* Old instrument format */
 			libxmp_bytes_seek(buf, start + pp_ins[i], LIBXMP_BYTES_SEEK_SET);
-			load_old_it_instrument(mem, buf, xxi);
+			if (load_old_it_instrument(mem, buf, xxi) < 0) {
+				return -1;
+			}
 		}
 	}
 
@@ -1060,7 +1076,9 @@ static int it_load(LIBXMP_MM mem, LIBXMP_BYTES buf, struct module_data *m, const
 
 	for (i = 0; i < mod->smp; i++) {
 		libxmp_bytes_seek(buf, start + pp_smp[i], LIBXMP_BYTES_SEEK_SET);
-		load_it_sample(mem, buf, m, i, start, sample_mode);
+		if (load_it_sample(mem, buf, m, i, start, sample_mode) < 0) {
+			return -1;
+		}
 	}
 
 	D_(D_INFO "Stored patterns: %d", mod->pat);
