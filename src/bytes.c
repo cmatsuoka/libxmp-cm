@@ -162,9 +162,11 @@ int libxmp_bytes_scan(LIBXMP_BYTES buf, char *fmt, ...)
 
 void libxmp_bytes_read(LIBXMP_BYTES buf, void *dst, int size)
 {
+	D_(D_INFO "pos=%ld size=%d end=%ld", B(buf)->pos - B(buf)->start, size, B(buf)->end - B(buf)->start);
 	/* check range */
-	if (B(buf)->pos + size >= B(buf)->end) {
-		libxmp_exception_throw(B(buf)->ex, LIBXMP_BYTES_ERANGE, "%s:%d: invalid read (size %ld)", size);
+	if (B(buf)->pos + size > B(buf)->end) {
+		libxmp_exception_throw(B(buf)->ex, LIBXMP_BYTES_ERANGE, "%s:%d: invalid read (pos %d, size %ld)",
+			__FUNCTION__, __LINE__, B(buf)->pos - B(buf)->start, size);
 	}
 
 	memcpy(dst, B(buf)->pos, size);
@@ -173,10 +175,10 @@ void libxmp_bytes_read(LIBXMP_BYTES buf, void *dst, int size)
 
 int libxmp_bytes_try_read(LIBXMP_BYTES buf, void *dst, int size)
 {
-	D_(D_INFO "size=%d", size);
+	D_(D_INFO "pos=%ld size=%d end=%ld", B(buf)->pos - B(buf)->start, size, B(buf)->end - B(buf)->start);
 
 	/* check range */
-	if (B(buf)->pos + size >= B(buf)->end) {
+	if (B(buf)->pos + size > B(buf)->end) {
 		size = B(buf)->end - B(buf)->pos;
 	}
 
