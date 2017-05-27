@@ -1186,7 +1186,7 @@ static int read_event_it(struct context_data *ctx, struct xmp_event *e, int chn)
 		if (sub != NULL) {
 			int transp = mod->xxi[candidate_ins].map[key].xpo;
 			int smp, to;
-			int rvv;
+			int rvv, rpv;
 
 			note = key + sub->xpo + transp;
 			smp = sub->sid;
@@ -1202,7 +1202,7 @@ static int read_event_it(struct context_data *ctx, struct xmp_event *e, int chn)
 				note, sub->nna, sub->dct, sub->dca);
 
 			/* Random value for volume swing */
-			rvv = sub->rvv & 0xff;
+			rvv = sub->rvv;
 			if (rvv) {
 				CLAMP(rvv, 0, 100);
 				xc->rvv = rand() % (rvv + 1);
@@ -1211,10 +1211,10 @@ static int read_event_it(struct context_data *ctx, struct xmp_event *e, int chn)
 			}
 
 			/* Random value for pan swing */
-			rvv = (sub->rvv & 0xff00) >> 8;
-			if (rvv) {
-				CLAMP(rvv, 0, 64);
-				xc->rpv = rand() % (rvv + 1) - (rvv / 2);
+			rpv = sub->rpv;
+			if (rpv) {
+				CLAMP(rpv, 0, 64);
+				xc->rpv = rand() % (rpv + 1) - (rpv / 2);
 			} else {
 				xc->rpv = 0;
 			}

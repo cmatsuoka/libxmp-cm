@@ -617,7 +617,8 @@ static int load_new_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_in
 			sub->pan = i2h.dfp & 0x80 ? -1 : i2h.dfp * 4;
 			sub->ifc = i2h.ifc;
 			sub->ifr = i2h.ifr;
-			sub->rvv = ((int)i2h.rp << 8) | i2h.rv;
+			sub->rvv = i2h.rv;
+			sub->rpv = i2h.rp;
 		}
 	}
 
