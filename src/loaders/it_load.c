@@ -283,6 +283,7 @@ static int read_envelope(LIBXMP_BYTES buf, struct xmp_envelope *ei, struct it_en
 	for (i = 0; i < 25; i++) {
 		libxmp_bytes_scan(buf, "b8;w16l", &env->node[i].y, &env->node[i].x);
 	}
+	libxmp_bytes_read8(buf);
 
 	ei->flg = env->flg & IT_ENV_ON ? XMP_ENVELOPE_ON : 0;
 
@@ -412,8 +413,8 @@ static int load_old_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_in
 
 	libxmp_bytes_scan(buf, "s4;s12;b8;b8;b8;b8;b8;b8;w16l;w16l;b8;b8;w16l;b8;b8;s26;s6;s240;s200;s50",
 		&i1h.magic, &i1h.dosname, &i1h.zero, &i1h.flags, &i1h.vls, &i1h.vle, &i1h.sls,
-		&i1h.sle, NULL, &i1h.fadeout, &i1h.nna, &i1h.dnc, &i1h.trkvers, &i1h.nos, NULL,
-		&i1h.name, NULL, &i1h.keys, &i1h.epoint, &i1h.enode);
+		&i1h.sle, &i1h.rsvd1, &i1h.fadeout, &i1h.nna, &i1h.dnc, &i1h.trkvers, &i1h.nos,
+		&i1h.rsvd2, &i1h.name, &i1h.rsvd3, &i1h.keys, &i1h.epoint, &i1h.enode);
 
 	if (i1h.magic != MAGIC_IMPI) {
 		return -1;
