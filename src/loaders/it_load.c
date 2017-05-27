@@ -411,7 +411,7 @@ static int load_old_it_instrument(LIBXMP_MM mem, LIBXMP_BYTES buf, struct xmp_in
 	struct it_instrument1_header i1h;
 	int c, k, j;
 
-	libxmp_bytes_scan(buf, "s4;s12;b8;b8;b8;b8;b8;b8;w16l;w16l;b8;b8;w16l;b8;b8;s26;s6;s240;s200;s50",
+	libxmp_bytes_scan(buf, "d32b;s12;b8;b8;b8;b8;b8;b8;w16l;w16l;b8;b8;w16l;b8;b8;s26;s6;s240;s200;s50",
 		&i1h.magic, &i1h.dosname, &i1h.zero, &i1h.flags, &i1h.vls, &i1h.vle, &i1h.sls,
 		&i1h.sle, &i1h.rsvd1, &i1h.fadeout, &i1h.nna, &i1h.dnc, &i1h.trkvers, &i1h.nos,
 		&i1h.rsvd2, &i1h.name, &i1h.rsvd3, &i1h.keys, &i1h.epoint, &i1h.enode);
