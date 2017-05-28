@@ -11,7 +11,7 @@
 #define VIRT_ACTIVE		0x100
 #define VIRT_INVALID		-1
 
-int	libxmp_virt_on		(struct context_data *, int);
+int	libxmp_virt_on		(struct context_data *, int, int, int);
 void	libxmp_virt_off		(struct context_data *);
 int	libxmp_virt_mute	(struct context_data *, int, int);
 int	libxmp_virt_setpatch	(struct context_data *, int, int, int, int,

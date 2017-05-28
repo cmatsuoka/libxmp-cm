@@ -1532,7 +1532,7 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 
 	update_from_ord_info(ctx);
 
-	if (libxmp_virt_on(ctx, mod->chn) != 0) {
+	if (libxmp_virt_on(ctx, mod->chn, HAS_QUIRK(QUIRK_VIRTUAL), IS_AMIGA_MOD()) != 0) {
 		return -XMP_ERROR_INTERNAL;
 	}
 

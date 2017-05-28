@@ -85,10 +85,9 @@ void libxmp_virt_resetvoice(struct context_data *ctx, int voc, int mute)
 }
 
 /* virt_on (number of tracks) */
-int libxmp_virt_on(struct context_data *ctx, int num)
+int libxmp_virt_on(struct context_data *ctx, int num, int has_virt, int has_paula)
 {
 	struct player_data *p = &ctx->p;
-	struct module_data *m = &ctx->m;
 	LIBXMP_MM mem = p->mem;
 	int i;
 
@@ -97,7 +96,7 @@ int libxmp_virt_on(struct context_data *ctx, int num)
 
 	p->virt.virt_channels = p->virt.num_tracks;
 
-	if (HAS_QUIRK(QUIRK_VIRTUAL)) {
+	if (has_virt) {
 		p->virt.virt_channels += num;
 	} else if (num > p->virt.virt_channels) {
 		num = p->virt.virt_channels;
@@ -113,7 +112,7 @@ int libxmp_virt_on(struct context_data *ctx, int num)
 
 #ifdef LIBXMP_PAULA_SIMULATOR
 	/* Initialize Paula simulator */
-	if (IS_AMIGA_MOD()) {
+	if (has_paula) {
 		for (i = 0; i < p->virt.maxvoc; i++) {
 			p->virt.voice_array[i].paula = libxmp_mm_calloc(mem, sizeof (struct paula_state));
 			libxmp_paula_init(ctx, p->virt.voice_array[i].paula);
