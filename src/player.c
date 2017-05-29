@@ -1313,26 +1313,6 @@ static void play_channel(struct context_data *ctx, int chn)
 }
 
 /*
- * Event injection
- */
-
-static void inject_event(struct context_data *ctx)
-{
-	struct player_data *p = &ctx->p;
-	struct module_data *m = &ctx->m;
-	struct xmp_module *mod = &m->mod;
-	int chn;
-	
-	for (chn = 0; chn < mod->chn; chn++) {
-		struct xmp_event *e = &p->inject_event[chn];
-		if (e->_flag > 0) {
-			libxmp_read_event(ctx, e, chn);
-			e->_flag = 0;
-		}
-	}
-}
-
-/*
  * Sequencing
  */
 
@@ -1673,8 +1653,6 @@ int xmp_play_frame(xmp_context opaque)
 		}
 #endif
 	}
-
-	inject_event(ctx);
 
 	/* play_frame */
 	for (i = 0; i < p->virt.virt_channels; i++) {
