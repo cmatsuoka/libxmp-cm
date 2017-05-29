@@ -208,9 +208,8 @@ static void anticlick(struct mixer_voice *vi)
 /* Ok, it's messy, but it works :-) Hipolito */
 static void do_anticlick(struct context_data *ctx, int voc, int32 *buf, int count)
 {
-	struct player_data *p = &ctx->p;
 	struct mixer_data *s = &ctx->s;
-	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct mixer_voice *vi = &s->voice[voc];
 	int smp_l, smp_r, max_x2;
 	int discharge = s->ticksize >> ANTICLICK_SHIFT;
 
@@ -247,8 +246,9 @@ static void do_anticlick(struct context_data *ctx, int voc, int32 *buf, int coun
 static void set_sample_end(struct context_data *ctx, int voc, int end)
 {
 	struct player_data *p = &ctx->p;
+	struct mixer_data *s = &ctx->s;
 	struct module_data *m = &ctx->m;
-	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct mixer_voice *vi = &s->voice[voc];
 	struct channel_data *xc;
 
 	if ((uint32)voc >= p->virt.maxvoc)
@@ -374,7 +374,7 @@ void libxmp_mixer_softmixer(struct context_data *ctx)
 	for (voc = 0; voc < p->virt.maxvoc; voc++) {
 		int c5spd, rampsize, delta_l, delta_r;
 
-		vi = &p->virt.voice_array[voc];
+		vi = &s->voice[voc];
 
 		if (vi->flags & ANTICLICK) {
 			if (s->interp > XMP_INTERP_NEAREST) {
@@ -586,8 +586,9 @@ void libxmp_mixer_softmixer(struct context_data *ctx)
 void libxmp_mixer_voicepos(struct context_data *ctx, int voc, double pos, int ac)
 {
 	struct player_data *p = &ctx->p;
+	struct mixer_data *s = &ctx->s;
 	struct module_data *m = &ctx->m;
-	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct mixer_voice *vi = &s->voice[voc];
 	struct xmp_sample *xxs;
 	int lps;
 
@@ -631,9 +632,9 @@ void libxmp_mixer_voicepos(struct context_data *ctx, int voc, double pos, int ac
 
 double libxmp_mixer_getvoicepos(struct context_data *ctx, int voc)
 {
-	struct player_data *p = &ctx->p;
+	struct mixer_data *s = &ctx->s;
 	struct module_data *m = &ctx->m;
-	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct mixer_voice *vi = &s->voice[voc];
 	struct xmp_module *mod = &m->mod;
 	struct xmp_sample *xxs;
 
@@ -654,12 +655,11 @@ double libxmp_mixer_getvoicepos(struct context_data *ctx, int voc)
 
 void libxmp_mixer_setpatch(struct context_data *ctx, int voc, int smp, int ac)
 {
-	struct player_data *p = &ctx->p;
 #ifndef LIBXMP_CORE_DISABLE_IT
 	struct module_data *m = &ctx->m;
 #endif
 	struct mixer_data *s = &ctx->s;
-	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct mixer_voice *vi = &s->voice[voc];
 	struct xmp_module *mod = &m->mod;
 	struct xmp_sample *xxs;
 
@@ -698,8 +698,8 @@ void libxmp_mixer_setpatch(struct context_data *ctx, int voc, int smp, int ac)
 
 void libxmp_mixer_setnote(struct context_data *ctx, int voc, int note)
 {
-	struct player_data *p = &ctx->p;
-	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct mixer_data *s = &ctx->s;
+	struct mixer_voice *vi = &s->voice[voc];
 
 	/* FIXME: Workaround for crash on notes that are too high
 	 *        see 6nations.it (+114 transposition on instrument 16)
@@ -716,16 +716,16 @@ void libxmp_mixer_setnote(struct context_data *ctx, int voc, int note)
 
 void libxmp_mixer_setperiod(struct context_data *ctx, int voc, double period)
 {
-	struct player_data *p = &ctx->p;
-	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct mixer_data *s = &ctx->s;
+	struct mixer_voice *vi = &s->voice[voc];
 
 	vi->period = period;
 }
 
 void libxmp_mixer_setvol(struct context_data *ctx, int voc, int vol)
 {
-	struct player_data *p = &ctx->p;
-	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct mixer_data *s = &ctx->s;
+	struct mixer_voice *vi = &s->voice[voc];
 
 	if (vol == 0) {
 		anticlick(vi);
@@ -736,8 +736,8 @@ void libxmp_mixer_setvol(struct context_data *ctx, int voc, int vol)
 
 void libxmp_mixer_release(struct context_data *ctx, int voc, int rel)
 {
-	struct player_data *p = &ctx->p;
-	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct mixer_data *s = &ctx->s;
+	struct mixer_voice *vi = &s->voice[voc];
 
 	if (rel) {
 		vi->flags |= VOICE_RELEASE;
@@ -749,8 +749,8 @@ void libxmp_mixer_release(struct context_data *ctx, int voc, int rel)
 void libxmp_mixer_seteffect(struct context_data *ctx, int voc, int type, int val)
 {
 #ifndef LIBXMP_CORE_DISABLE_IT
-	struct player_data *p = &ctx->p;
-	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct mixer_data *s = &ctx->s;
+	struct mixer_voice *vi = &s->voice[voc];
 
 	switch (type) {
 	case DSP_EFFECT_CUTOFF:
@@ -774,8 +774,8 @@ void libxmp_mixer_seteffect(struct context_data *ctx, int voc, int type, int val
 
 void libxmp_mixer_setpan(struct context_data *ctx, int voc, int pan)
 {
-	struct player_data *p = &ctx->p;
-	struct mixer_voice *vi = &p->virt.voice_array[voc];
+	struct mixer_data *s = &ctx->s;
+	struct mixer_voice *vi = &s->voice[voc];
 
 	vi->pan = pan;
 }
@@ -816,4 +816,55 @@ void libxmp_mixer_off(struct context_data *ctx)
 
 	s->buf32 = NULL;
 	s->buffer = NULL;
+}
+
+/* Get parent channel */
+int libxmp_mixer_getroot(struct context_data *ctx, int voc)
+{
+	struct mixer_data *s = &ctx->s;
+	struct mixer_voice *vi;
+
+#if 0
+	if (voc >= s->num_voices) {
+		return;
+	}
+#endif
+
+	vi = &s->voice[voc];
+
+	return vi->root;
+}
+
+int libxmp_mixer_getchn(struct context_data *ctx, int voc)
+{
+	struct mixer_data *s = &ctx->s;
+	struct mixer_voice *vi;
+
+#if 0
+	if (voc >= s->num_voices) {
+		return;
+	}
+#endif
+
+	vi = &s->voice[voc];
+
+	return vi->chn;
+}
+
+void libxmp_mixer_resetvoice(struct context_data *ctx, int voc)
+{
+	struct mixer_data *s = &ctx->s;
+	struct mixer_voice *vi = &s->voice[voc];
+#ifdef LIBXMP_PAULA_SIMULATOR
+	struct paula_state *paula;
+#endif
+
+#ifdef LIBXMP_PAULA_SIMULATOR
+	paula = vi->paula;
+#endif
+	memset(vi, 0, sizeof(struct mixer_voice));
+#ifdef LIBXMP_PAULA_SIMULATOR
+	vi->paula = paula;
+#endif
+	vi->chn = vi->root = -1;
 }

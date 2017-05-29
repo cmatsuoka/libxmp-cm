@@ -265,7 +265,6 @@ struct player_data {
 			int map;
 		} *virt_channel;
 	
-		struct mixer_voice *voice_array;
 	} virt;
 
 	struct {		
@@ -294,6 +293,8 @@ struct mixer_data {
 	int dtright;		/* anticlick control, right channel */
 	int dtleft;		/* anticlick control, left channel */
 	double pbase;		/* period base */
+
+	struct mixer_voice *voice;
 };
 
 struct context_data {

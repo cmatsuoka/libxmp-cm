@@ -14,6 +14,7 @@ static void _compare_mixer_data(char *mod, char *data, int loops, int ignore_rv)
 	struct context_data *ctx;
 	struct module_data *m;
         struct player_data *p;
+        struct mixer_data *s;
         struct mixer_voice *vi;
 	struct xmp_frame_info fi;
 	int time, row, frame, chan, period, note, ins, vol, pan, pos0, cutoff;
@@ -34,6 +35,7 @@ static void _compare_mixer_data(char *mod, char *data, int loops, int ignore_rv)
 	ctx = (struct context_data *)opaque;
 	m = &ctx->m;
 	p = &ctx->p;
+	s = &ctx->s;
 
 	xmp_start_player(opaque, 44100, 0);
 	xmp_set_player(opaque, XMP_PLAYER_MIX, 100);
@@ -53,7 +55,7 @@ static void _compare_mixer_data(char *mod, char *data, int loops, int ignore_rv)
 			if (voc < 0 || TEST_NOTE(NOTE_SAMPLE_END))
 				continue;
 
-			vi = &p->virt.voice_array[voc];
+			vi = &s->voice[voc];
 
 #if 1
 			fgets(line, 200, f);

@@ -75,4 +75,8 @@ void	libxmp_mixer_setnote	(struct context_data *, int, int);
 void	libxmp_mixer_setperiod	(struct context_data *, int, double);
 void	libxmp_mixer_release	(struct context_data *, int, int);
 
+int	libxmp_mixer_getroot	(struct context_data *, int);
+int	libxmp_mixer_getchn	(struct context_data *, int);
+void	libxmp_mixer_resetvoice	(struct context_data *, int);
+
 #endif /* LIBXMP_MIXER_H */
