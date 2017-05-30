@@ -96,6 +96,7 @@ int libxmp_virt_on(struct context_data *ctx, int num, int has_virt, int has_paul
 
 	p->virt.maxvoc = libxmp_mixer_numvoices(ctx, num);
 	s->voice = libxmp_mm_calloc(mem, p->virt.maxvoc * sizeof(struct mixer_voice));
+	p->virt.nna = libxmp_mm_calloc(mem, p->virt.maxvoc);
 
 	for (i = 0; i < p->virt.maxvoc; i++) {
 		s->voice[i].chn = FREE;
@@ -356,14 +357,13 @@ void libxmp_virt_setsmp(struct context_data *ctx, int chn, int smp)
 void libxmp_virt_setnna(struct context_data *ctx, int chn, int nna)
 {
 	struct player_data *p = &ctx->p;
-	struct mixer_data *s = &ctx->s;
 	int voc;
 
 	if ((voc = map_virt_channel(p, chn)) < 0) {
 		return;
 	}
 
-	s->voice[voc].act = nna;
+	p->virt.nna[voc] = nna;
 }
 
 static void check_dct(struct context_data *ctx, int i, int chn, int ins,
@@ -383,17 +383,17 @@ static void check_dct(struct context_data *ctx, int i, int chn, int ins,
 		    return;
 		}
 
-		vi->act = nna;
+		p->virt.nna[i] = nna;
 
 		if ((dct == XMP_INST_DCT_INST) ||
 		    (dct == XMP_INST_DCT_SMP && vi->smp == smp) ||
 		    (dct == XMP_INST_DCT_NOTE && vi->note == note)) {
 
 			if (nna == XMP_INST_NNA_OFF && dca == XMP_INST_DCA_FADE) {
-				vi->act = VIRT_ACTION_OFF;
+				p->virt.nna[i] = VIRT_ACTION_OFF;
 			} else if (dca) {
-				if (i != voc || vi->act) {
-					vi->act = dca;
+				if (i != voc || p->virt.nna[i]) {
+					p->virt.nna[i] = dca;
 				}
 			} else {
 				libxmp_virt_resetvoice(ctx, i, 1);
@@ -445,7 +445,7 @@ int libxmp_virt_setpatch(struct context_data *ctx, int chn, int ins, int smp,
 	voc = p->virt.virt_channel[chn].map;
 
 	if (voc > FREE) {
-		if (s->voice[voc].act) {
+		if (p->virt.nna[voc]) {
 			vfree = alloc_voice(ctx, chn);
 
 			if (vfree < 0) {
@@ -474,7 +474,7 @@ int libxmp_virt_setpatch(struct context_data *ctx, int chn, int ins, int smp,
 	libxmp_mixer_setpatch(ctx, voc, smp, 1);
 	libxmp_mixer_setnote(ctx, voc, note);
 	s->voice[voc].ins = ins;
-	s->voice[voc].act = nna;
+	p->virt.nna[voc] = nna;
 
 	return chn;
 }
@@ -536,7 +536,6 @@ void libxmp_virt_pastnote(struct context_data *ctx, int chn, int act)
 int libxmp_virt_cstat(struct context_data *ctx, int chn)
 {
 	struct player_data *p = &ctx->p;
-	struct mixer_data *s = &ctx->s;
 	int voc;
 
 	if ((voc = map_virt_channel(p, chn)) < 0) {
@@ -547,5 +546,5 @@ int libxmp_virt_cstat(struct context_data *ctx, int chn)
 		return VIRT_ACTIVE;
 	}
 
-	return s->voice[voc].act;
+	return p->virt.nna[voc];
 }

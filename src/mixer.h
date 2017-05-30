@@ -31,7 +31,7 @@ struct mixer_voice {
 	int ins;		/* instrument number */
 	int smp;		/* sample number */
 	int end;		/* loop end */
-	int act;		/* nna info & status of voice */
+	//int act;		/* nna info & status of voice */
 	int old_vl;		/* previous volume, left channel */
 	int old_vr;		/* previous volume, right channel */
 	int sleft;		/* last left sample output, in 32bit */

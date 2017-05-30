@@ -265,6 +265,7 @@ struct player_data {
 			int map;
 		} *virt_channel;
 	
+		uint8 *nna;
 	} virt;
 
 	struct {		
