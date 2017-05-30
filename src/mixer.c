@@ -308,14 +308,12 @@ static void loop_reposition(struct context_data *ctx, struct mixer_voice *vi, st
 }
 
 /* Prepare the mixer for the next tick */
-void libxmp_mixer_prepare(struct context_data *ctx)
+static void mixer_prepare(struct context_data *ctx, double time_factor, double rrate, double bpm)
 {
-	struct player_data *p = &ctx->p;
-	struct module_data *m = &ctx->m;
 	struct mixer_data *s = &ctx->s;
 	int bytelen;
 
-	s->ticksize = s->freq * m->time_factor * m->rrate / p->bpm / 1000;
+	s->ticksize = s->freq * time_factor * rrate / bpm / 1000;
 
 	bytelen = s->ticksize * sizeof(int);
 	if (~s->format & XMP_FORMAT_MONO) {
@@ -369,7 +367,7 @@ void libxmp_mixer_softmixer(struct context_data *ctx)
 	}
 #endif
 
-	libxmp_mixer_prepare(ctx);
+	mixer_prepare(ctx, m->time_factor, m->rrate, p->bpm);
 
 	for (voc = 0; voc < p->virt.maxvoc; voc++) {
 		int c5spd, rampsize, delta_l, delta_r;
