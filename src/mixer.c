@@ -404,7 +404,7 @@ void libxmp_mixer_softmixer(struct context_data *ctx)
 		}
 
 		xxs = &mod->xxs[vi->smp];
-		c5spd = m->xtra[vi->smp].c5spd;
+		c5spd = xxs->rate;
 		step = C4_PERIOD * c5spd / s->freq / vi->period;
 
 		if (step < 0.001) {	/* otherwise m5v-nwlf.it crashes */

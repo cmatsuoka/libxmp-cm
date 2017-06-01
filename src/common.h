@@ -155,11 +155,6 @@ struct ord_data {
 
 /* Context */
 
-/* This will be added to the sample structure in the next API revision */
-struct extra_sample_data {
-	double c5spd;
-};
-
 struct module_data {
 	struct xmp_module mod;
 	LIBXMP_MM mem;
@@ -194,7 +189,6 @@ struct module_data {
 	char *instrument_path;
 	void *extra;			/* format-specific extra fields */
 	char **scan_cnt;		/* scan counters */
-	struct extra_sample_data *xtra;
 #ifndef LIBXMP_CORE_DISABLE_IT
 	struct xmp_sample *xsmp;	/* sustain loop samples */
 #endif

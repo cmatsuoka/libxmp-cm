@@ -46,10 +46,9 @@ void libxmp_init_instrument(LIBXMP_MM mem, struct module_data *m)
 		int i;
 
 		mod->xxs = libxmp_mm_calloc(mem, sizeof (struct xmp_sample) * mod->smp);
-		m->xtra = libxmp_mm_calloc(mem, sizeof (struct extra_sample_data) * mod->smp);
 
 		for (i = 0; i < mod->smp; i++) {
-			m->xtra[i].c5spd = m->c4rate;
+			mod->xxs[i].rate = m->c4rate;
 		}
 	}
 }
