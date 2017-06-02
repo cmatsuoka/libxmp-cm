@@ -423,10 +423,6 @@ void libxmp_mixer_softmixer(struct context_data *ctx)
 		lps = xxs->lps;
 		lpe = xxs->lpe;
 
-		if (p->flags & XMP_FLAGS_FIXLOOP) {
-			lps >>= 1;
-		}
-
 		if (xxs->flg & XMP_SAMPLE_LOOP_BIDIR) {
 			vi->end += lpe - lps;
 
@@ -582,7 +578,6 @@ void libxmp_mixer_softmixer(struct context_data *ctx)
 
 void libxmp_mixer_voicepos(struct context_data *ctx, int voc, double pos, int ac)
 {
-	struct player_data *p = &ctx->p;
 	struct mixer_data *s = ctx->s;
 	struct module_data *m = &ctx->m;
 	struct mixer_voice *vi = &s->voice[voc];
@@ -604,9 +599,6 @@ void libxmp_mixer_voicepos(struct context_data *ctx, int voc, double pos, int ac
 	}
 
 	lps = xxs->lps;
-	if (p->flags & XMP_FLAGS_FIXLOOP) {
-		lps >>= 1;
-	}
 
 	if (xxs->flg & XMP_SAMPLE_LOOP_BIDIR) {
 		vi->end += (xxs->lpe - lps);
