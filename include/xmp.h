@@ -231,7 +231,6 @@ struct xmp_sample {
 #define XMP_SAMPLE_LOOP_FULL	(1 << 4)  /* Play full sample before looping */
 #define XMP_SAMPLE_SLOOP	(1 << 5)  /* Sample has sustain loop */
 #define XMP_SAMPLE_SLOOP_BIDIR	(1 << 6)  /* Bidirectional sustain loop */
-#define XMP_SAMPLE_SYNTH	(1 << 15) /* Data contains synth patch */
 	int flg;			/* Flags */
 	int rate;
 	unsigned char *data;		/* Sample data */

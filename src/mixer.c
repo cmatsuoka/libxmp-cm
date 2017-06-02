@@ -591,10 +591,6 @@ void libxmp_mixer_voicepos(struct context_data *ctx, int voc, double pos, int ac
 
  	xxs = &m->mod.xxs[vi->smp];
 
-	if (xxs->flg & XMP_SAMPLE_SYNTH) {
-		return;
-	}
-
 	vi->pos = pos;
 
 	adjust_voice_end(vi, xxs);
@@ -636,10 +632,6 @@ double libxmp_mixer_getvoicepos(struct context_data *ctx, int voc)
 	struct xmp_sample *xxs;
 
 	xxs = &mod->xxs[vi->smp];
-
-	if (xxs->flg & XMP_SAMPLE_SYNTH) {
-		return 0;
-	}
 
 	if (xxs->flg & XMP_SAMPLE_LOOP_BIDIR) {
 		if (vi->pos >= xxs->lpe) {
