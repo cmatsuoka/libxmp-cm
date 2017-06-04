@@ -57,9 +57,11 @@ xmp_context xmp_create_context()
 		goto err4;
 	}
 
+	ctx->s = libxmp_mixer_new(ctx->p.mem);
+
 	ctx->state = XMP_STATE_UNLOADED;
 	ctx->m.defpan = 100;
-	ctx->s.numvoc = SMIX_NUMVOC;
+	ctx->s->numvoc = SMIX_NUMVOC;
 
 	return (xmp_context)ctx;
 
@@ -307,7 +309,7 @@ int xmp_set_player(xmp_context opaque, int parm, int val)
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s = ctx->s;
 	int ret = -XMP_ERROR_INVALID;
 
 
@@ -400,7 +402,7 @@ int xmp_get_player(xmp_context opaque, int parm)
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s = ctx->s;
 	int ret = -XMP_ERROR_INVALID;
 
 	if (parm == XMP_PLAYER_SMPCTL || parm == XMP_PLAYER_DEFPAN) {

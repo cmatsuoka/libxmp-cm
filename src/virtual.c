@@ -49,7 +49,7 @@ int libxmp_virt_getroot(struct context_data *ctx, int chn)
 		return -1;
 	}
 
-	return libxmp_mixer_getroot(ctx, voc);
+	return libxmp_mixer_getroot(ctx->s, voc);
 }
 
 void libxmp_virt_resetvoice(struct context_data *ctx, int voc, int mute)
@@ -62,29 +62,29 @@ void libxmp_virt_resetvoice(struct context_data *ctx, int voc, int mute)
 	}
 
 	if (mute) {
-		libxmp_mixer_setvol(ctx, voc, 0);
+		libxmp_mixer_setvol(ctx->s, voc, 0);
 	}
 
-	root = libxmp_mixer_getroot(ctx, voc);
-	chn = libxmp_mixer_getchn(ctx, voc);
+	root = libxmp_mixer_getroot(ctx->s, voc);
+	chn = libxmp_mixer_getchn(ctx->s, voc);
 
 	p->virt.virt_used--;
 	p->virt.virt_channel[root].count--;
 	p->virt.virt_channel[chn].map = FREE;
 
-	libxmp_mixer_resetvoice(ctx, voc);
+	libxmp_mixer_resetvoice(ctx->s, voc);
 }
 
 /* virt_on (number of tracks) */
 int libxmp_virt_on(struct context_data *ctx, int num, int has_virt, int has_paula)
 {
 	struct player_data *p = &ctx->p;
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s = ctx->s;
 	LIBXMP_MM mem = p->mem;
 	int i;
 
 	p->virt.num_tracks = num;
-	num = libxmp_mixer_numvoices(ctx, -1);
+	num = libxmp_mixer_numvoices(ctx->s, -1);
 
 	p->virt.virt_channels = p->virt.num_tracks;
 
@@ -94,7 +94,7 @@ int libxmp_virt_on(struct context_data *ctx, int num, int has_virt, int has_paul
 		num = p->virt.virt_channels;
 	}
 
-	p->virt.maxvoc = libxmp_mixer_numvoices(ctx, num);
+	p->virt.maxvoc = libxmp_mixer_numvoices(ctx->s, num);
 	s->voice = libxmp_mm_calloc(mem, p->virt.maxvoc * sizeof(struct mixer_voice));
 	p->virt.nna = libxmp_mm_calloc(mem, p->virt.maxvoc);
 
@@ -108,7 +108,7 @@ int libxmp_virt_on(struct context_data *ctx, int num, int has_virt, int has_paul
 	if (has_paula) {
 		for (i = 0; i < p->virt.maxvoc; i++) {
 			s->voice[i].paula = libxmp_mm_calloc(mem, sizeof (struct paula_state));
-			libxmp_paula_init(ctx, s->voice[i].paula);
+			libxmp_paula_init(ctx, s->voice[i].paula, s->freq);
 		}
 	}
 #endif
@@ -150,7 +150,7 @@ void libxmp_virt_reset(struct context_data *ctx)
 	 */
 
 	for (i = 0; i < p->virt.maxvoc; i++) {
-		libxmp_mixer_resetvoice(ctx, i);
+		libxmp_mixer_resetvoice(ctx->s, i);
 	}
 
 	for (i = 0; i < p->virt.virt_channels; i++) {
@@ -164,7 +164,7 @@ void libxmp_virt_reset(struct context_data *ctx)
 static int free_voice(struct context_data *ctx)
 {
 	struct player_data *p = &ctx->p;
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s =ctx->s;
 	int i, num, vol;
 
 	/* Find background voice with lowest volume*/
@@ -192,7 +192,7 @@ static int free_voice(struct context_data *ctx)
 static int alloc_voice(struct context_data *ctx, int chn)
 {
 	struct player_data *p = &ctx->p;
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s = ctx->s;
 	int i;
 
 	/* Find free voice */
@@ -247,14 +247,14 @@ void libxmp_virt_resetchannel(struct context_data *ctx, int chn)
 	if ((voc = map_virt_channel(p, chn)) < 0)
 		return;
 
-	root = libxmp_mixer_getroot(ctx, voc);
+	root = libxmp_mixer_getroot(ctx->s, voc);
 
 	p->virt.virt_used--;
 	p->virt.virt_channel[root].count--;
 	p->virt.virt_channel[chn].map = FREE;
 
-	libxmp_mixer_setvol(ctx, voc, 0);
-	libxmp_mixer_resetvoice(ctx, voc);
+	libxmp_mixer_setvol(ctx->s, voc, 0);
+	libxmp_mixer_resetvoice(ctx->s, voc);
 }
 
 void libxmp_virt_setvol(struct context_data *ctx, int chn, int vol)
@@ -266,12 +266,12 @@ void libxmp_virt_setvol(struct context_data *ctx, int chn, int vol)
 		return;
 	}
 
-	root = libxmp_mixer_getroot(ctx, voc);
+	root = libxmp_mixer_getroot(ctx->s, voc);
 	if (root < XMP_MAX_CHANNELS && p->channel_mute[root]) {
 		vol = 0;
 	}
 
-	libxmp_mixer_setvol(ctx, voc, vol);
+	libxmp_mixer_setvol(ctx->s, voc, vol);
 
 	if (vol == 0 && chn >= p->virt.num_tracks) {
 		libxmp_virt_resetvoice(ctx, voc, 1);
@@ -287,7 +287,7 @@ void libxmp_virt_release(struct context_data *ctx, int chn, int rel)
 		return;
 	}
 
-	libxmp_mixer_release(ctx, voc, rel);
+	libxmp_mixer_voicerelease(ctx->s, voc, rel);
 }
 
 void libxmp_virt_setpan(struct context_data *ctx, int chn, int pan)
@@ -299,7 +299,7 @@ void libxmp_virt_setpan(struct context_data *ctx, int chn, int pan)
 		return;
 	}
 
-	libxmp_mixer_setpan(ctx, voc, pan);
+	libxmp_mixer_setpan(ctx->s, voc, pan);
 }
 
 void libxmp_virt_seteffect(struct context_data *ctx, int chn, int type, int val)
@@ -311,7 +311,7 @@ void libxmp_virt_seteffect(struct context_data *ctx, int chn, int type, int val)
 		return;
 	}
 
-	libxmp_mixer_seteffect(ctx, voc, type, val);
+	libxmp_mixer_seteffect(ctx->s, voc, type, val);
 }
 
 double libxmp_virt_getvoicepos(struct context_data *ctx, int chn)
@@ -331,7 +331,7 @@ double libxmp_virt_getvoicepos(struct context_data *ctx, int chn)
 void libxmp_virt_setsmp(struct context_data *ctx, int chn, int smp)
 {
 	struct player_data *p = &ctx->p;
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s = ctx->s;
 	struct mixer_voice *vi;
 	double pos;
 	int voc;
@@ -370,7 +370,7 @@ static void check_dct(struct context_data *ctx, int i, int chn, int ins,
 			int smp, int note, int nna, int dct, int dca)
 {
 	struct player_data *p = &ctx->p;
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s = ctx->s;
 	struct mixer_voice *vi = &s->voice[i];
 	int voc;
 
@@ -414,14 +414,14 @@ void libxmp_virt_setnote(struct context_data *ctx, int chn, int note)
 		return;
 	}
 
-	libxmp_mixer_setnote(ctx, voc, note);
+	libxmp_mixer_setnote(ctx->s, voc, note);
 }
 
 int libxmp_virt_setpatch(struct context_data *ctx, int chn, int ins, int smp,
 		    			int note, int nna, int dct, int dca)
 {
 	struct player_data *p = &ctx->p;
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s = ctx->s;
 	int voc, vfree;
 
 	if ((uint32)chn >= p->virt.virt_channels) {
@@ -472,7 +472,7 @@ int libxmp_virt_setpatch(struct context_data *ctx, int chn, int ins, int smp,
 	}
 
 	libxmp_mixer_setpatch(ctx, voc, smp, 1);
-	libxmp_mixer_setnote(ctx, voc, note);
+	libxmp_mixer_setnote(ctx->s, voc, note);
 	s->voice[voc].ins = ins;
 	p->virt.nna[voc] = nna;
 
@@ -488,7 +488,7 @@ void libxmp_virt_setperiod(struct context_data *ctx, int chn, double period)
 		return;
 	}
 
-	libxmp_mixer_setperiod(ctx, voc, period);
+	libxmp_mixer_setperiod(ctx->s, voc, period);
 }
 
 void libxmp_virt_voicepos(struct context_data *ctx, int chn, double pos)
@@ -508,7 +508,7 @@ void libxmp_virt_voicepos(struct context_data *ctx, int chn, double pos)
 void libxmp_virt_pastnote(struct context_data *ctx, int chn, int act)
 {
 	struct player_data *p = &ctx->p;
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s = ctx->s;
 	int c, voc;
 
 	for (c = p->virt.num_tracks; c < p->virt.virt_channels; c++) {

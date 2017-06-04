@@ -274,6 +274,7 @@ struct player_data {
 	int filter;			/* Amiga led filter */
 };
 
+#if 0
 struct mixer_data {
 	int freq;		/* sampling rate */
 	int format;		/* sample format */
@@ -291,11 +292,12 @@ struct mixer_data {
 
 	struct mixer_voice *voice;
 };
+#endif
 
 struct context_data {
 	LIBXMP_EXCEPTION ex;
 	struct player_data p;
-	struct mixer_data s;
+	struct mixer_data *s;
 	struct module_data m;
 	int state;
 };

@@ -10,13 +10,11 @@
 #include "paula.h"
 #include "precomp_blep.h"
 
-void libxmp_paula_init(struct context_data *ctx, struct paula_state *paula)
+void libxmp_paula_init(struct context_data *ctx, struct paula_state *paula, int freq)
 {
-	struct mixer_data *s = &ctx->s;
-
 	paula->global_output_level = 0;
 	paula->active_bleps = 0;
-	paula->fdiv = (double)PAULA_HZ / s->freq;
+	paula->fdiv = (double)PAULA_HZ / freq;
 	paula->remainder = paula->fdiv;
 }
 

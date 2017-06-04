@@ -759,7 +759,7 @@ static void process_volume(struct context_data *ctx, int chn, int act)
 static void process_frequency(struct context_data *ctx, int chn, int act)
 {
 #ifndef LIBXMP_CORE_DISABLE_IT
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s = ctx->s;
 #endif
 	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
@@ -973,7 +973,7 @@ static void process_pan(struct context_data *ctx, int chn, int act)
 {
 	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s = ctx->s;
 	struct channel_data *xc = &p->xc_data[chn];
 	struct xmp_module *mod = &m->mod;
 	struct xmp_instrument *instrument;
@@ -1473,7 +1473,7 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 		xmp_end_player(opaque);
 	}
 
-	libxmp_mixer_on(ctx, rate, format, m->c4rate);
+	libxmp_mixer_on(ctx->s, rate, format, m->c4rate);
 
 	p->master_vol = 100;
 	p->gvol = m->volbase;
@@ -1742,7 +1742,7 @@ void xmp_end_player(xmp_context opaque)
 	p->xc_data = NULL;
 	f->loop = NULL;
 
-	libxmp_mixer_off(ctx);
+	libxmp_mixer_off(ctx->s);
 }
 
 void xmp_get_module_info(xmp_context opaque, struct xmp_module_info *info)
@@ -1766,7 +1766,7 @@ void xmp_get_frame_info(xmp_context opaque, struct xmp_frame_info *info)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct player_data *p = &ctx->p;
-	struct mixer_data *s = &ctx->s;
+	struct mixer_data *s = ctx->s;
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
 	int chn, i;

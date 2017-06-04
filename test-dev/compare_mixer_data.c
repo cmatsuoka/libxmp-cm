@@ -35,7 +35,7 @@ static void _compare_mixer_data(char *mod, char *data, int loops, int ignore_rv)
 	ctx = (struct context_data *)opaque;
 	m = &ctx->m;
 	p = &ctx->p;
-	s = &ctx->s;
+	s = ctx->s;
 
 	xmp_start_player(opaque, 44100, 0);
 	xmp_set_player(opaque, XMP_PLAYER_MIX, 100);
