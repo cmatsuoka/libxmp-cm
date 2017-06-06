@@ -323,7 +323,7 @@ double libxmp_virt_getvoicepos(struct context_data *ctx, int chn)
 		return -1;
 	}
 
-	return libxmp_mixer_getvoicepos(ctx, voc);
+	return libxmp_mixer_getvoicepos(ctx->s, voc, ctx->m.mod.xxs);
 }
 
 #ifndef LIBXMP_CORE_PLAYER
@@ -345,7 +345,7 @@ void libxmp_virt_setsmp(struct context_data *ctx, int chn, int smp)
 		return;
 	}
 
-	pos = libxmp_mixer_getvoicepos(ctx, voc);
+	pos = libxmp_mixer_getvoicepos(s, voc, ctx->m.mod.xxs);
 	libxmp_mixer_setpatch(ctx, voc, smp, 0);
 	libxmp_mixer_voicepos(ctx, voc, pos, 0);	/* Restore old position */
 }

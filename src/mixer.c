@@ -615,15 +615,12 @@ void libxmp_mixer_voicepos(struct context_data *ctx, int voc, double pos, int ac
 	}
 }
 
-double libxmp_mixer_getvoicepos(struct context_data *ctx, int voc)
+double libxmp_mixer_getvoicepos(struct mixer_data *s, int voc, struct xmp_sample *samples)
 {
-	struct mixer_data *s = ctx->s;
-	struct module_data *m = &ctx->m;
 	struct mixer_voice *vi = &s->voice[voc];
-	struct xmp_module *mod = &m->mod;
 	struct xmp_sample *xxs;
 
-	xxs = &mod->xxs[vi->smp];
+	xxs = &samples[vi->smp];
 
 	if (xxs->flg & XMP_SAMPLE_LOOP_BIDIR) {
 		if (vi->pos >= xxs->lpe) {
