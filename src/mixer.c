@@ -576,15 +576,13 @@ void libxmp_mixer_softmixer(struct context_data *ctx)
 	s->dtright = s->dtleft = 0;
 }
 
-void libxmp_mixer_voicepos(struct context_data *ctx, int voc, double pos, int ac)
+void libxmp_mixer_voicepos(struct mixer_data *s, int voc, double pos, int ac, int short_bidir, struct xmp_sample *samples)
 {
-	struct mixer_data *s = ctx->s;
-	struct module_data *m = &ctx->m;
 	struct mixer_voice *vi = &s->voice[voc];
 	struct xmp_sample *xxs;
 	int lps;
 
- 	xxs = &m->mod.xxs[vi->smp];
+ 	xxs = &samples[vi->smp];
 
 	vi->pos = pos;
 
@@ -604,7 +602,7 @@ void libxmp_mixer_voicepos(struct context_data *ctx, int voc, double pos, int ac
 		vi->end += (xxs->lpe - lps);
 
 #ifndef LIBXMP_CORE_DISABLE_IT
-		if (IS_PLAYER_MODE_IT()) {
+		if (short_bidir) {
 			vi->end--;
 		}
 #endif
@@ -671,7 +669,7 @@ void libxmp_mixer_setpatch(struct context_data *ctx, int voc, int smp, int ac)
 		vi->fidx |= FLAG_16_BITS;
 	}
 
-	libxmp_mixer_voicepos(ctx, voc, 0, ac);
+	libxmp_mixer_voicepos(s, voc, 0, ac, IS_PLAYER_MODE_IT(), xxs);
 }
 
 void libxmp_mixer_setnote(struct mixer_data *s, int voc, int note)

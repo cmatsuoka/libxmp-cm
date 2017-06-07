@@ -331,6 +331,7 @@ double libxmp_virt_getvoicepos(struct context_data *ctx, int chn)
 void libxmp_virt_setsmp(struct context_data *ctx, int chn, int smp)
 {
 	struct player_data *p = &ctx->p;
+	struct module_data *m = &ctx->m;
 	struct mixer_data *s = ctx->s;
 	struct mixer_voice *vi;
 	double pos;
@@ -347,7 +348,7 @@ void libxmp_virt_setsmp(struct context_data *ctx, int chn, int smp)
 
 	pos = libxmp_mixer_getvoicepos(s, voc, ctx->m.mod.xxs);
 	libxmp_mixer_setpatch(ctx, voc, smp, 0);
-	libxmp_mixer_voicepos(ctx, voc, pos, 0);	/* Restore old position */
+	libxmp_mixer_voicepos(s, voc, pos, 0, IS_PLAYER_MODE_IT(), ctx->m.mod.xxs);	/* Restore old position */
 }
 
 #endif
@@ -494,13 +495,14 @@ void libxmp_virt_setperiod(struct context_data *ctx, int chn, double period)
 void libxmp_virt_voicepos(struct context_data *ctx, int chn, double pos)
 {
 	struct player_data *p = &ctx->p;
+	struct module_data *m = &ctx->m;
 	int voc;
 
 	if ((voc = map_virt_channel(p, chn)) < 0) {
 		return;
 	}
 
-	libxmp_mixer_voicepos(ctx, voc, pos, 1);
+	libxmp_mixer_voicepos(ctx->s, voc, pos, 1, IS_PLAYER_MODE_IT(), ctx->m.mod.xxs);
 }
 
 #ifndef LIBXMP_CORE_DISABLE_IT

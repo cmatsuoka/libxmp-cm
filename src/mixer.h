@@ -89,7 +89,7 @@ void    libxmp_mixer_setpan	(struct mixer_data *, int, int);
 int	libxmp_mixer_numvoices	(struct mixer_data *, int);
 void	libxmp_mixer_softmixer	(struct context_data *);
 void	libxmp_mixer_setpatch	(struct context_data *, int, int, int);
-void	libxmp_mixer_voicepos	(struct context_data *, int, double, int);
+void	libxmp_mixer_voicepos	(struct mixer_data *, int, double, int, int, struct xmp_sample *);
 double	libxmp_mixer_getvoicepos(struct mixer_data *, int, struct xmp_sample *);
 void	libxmp_mixer_setnote	(struct mixer_data *, int, int);
 void	libxmp_mixer_setperiod	(struct mixer_data *, int, double);
